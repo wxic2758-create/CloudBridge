@@ -9,22 +9,29 @@ manifest = ROOT / "Resources/Localization/locale-manifest.json"
 import json
 locales = json.loads(manifest.read_text(encoding="utf-8"))["locales"]
 
-def keys(path):
-    return set(re.findall(r'^\s*"((?:\\.|[^"\\])+)"\s*=', path.read_text(encoding="utf-8"), re.MULTILINE))
+ENTRY = re.compile(r'^\s*"((?:\\.|[^"\\])+)"\s*=\s*"((?:\\.|[^"\\])*)"\s*;', re.MULTILINE)
 
-source = keys(ROOT / "Resources/en.lproj/Localizable.strings")
+def entries(path):
+    return {key: value for key, value in ENTRY.findall(path.read_text(encoding="utf-8"))}
+
+source = entries(ROOT / "Resources/en.lproj/Localizable.strings")
 errors = []
 for locale in locales:
     path = ROOT / f"Resources/{locale}.lproj/Localizable.strings"
     if not path.exists():
         errors.append(f"missing bundle: {locale}")
         continue
-    found = keys(path)
-    if found != source:
-        errors.append(f"{locale}: missing={sorted(source-found)} extra={sorted(found-source)}")
+    found = entries(path)
+    if set(found) != set(source):
+        errors.append(f"{locale}: missing={sorted(set(source)-set(found))} extra={sorted(set(found)-set(source))}")
+    for key in set(source) & set(found):
+        source_placeholders = re.findall(r'%(?:\d+\$)?[@dDuUxXfFeEgGcCsSpaAF]', source[key])
+        found_placeholders = re.findall(r'%(?:\d+\$)?[@dDuUxXfFeEgGcCsSpaAF]', found[key])
+        if source_placeholders != found_placeholders:
+            errors.append(f"{locale}:{key}: placeholders {found_placeholders} != {source_placeholders}")
 
 if errors:
     print("Localization check failed:")
     print("\n".join(errors))
     sys.exit(1)
-print(f"Localization check passed for {len(locales)} locales and {len(source)} keys.")
+print(f"Localization check passed for {len(locales)} locales and {len(source)} keys with matching placeholders.")
