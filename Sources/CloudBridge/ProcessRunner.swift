@@ -109,8 +109,8 @@ private final class ProcessExecution: @unchecked Sendable {
     private var process: Process?
     private var didFinish = false
     private var terminationError: (any Error)?
-    private var stdoutTask: Task<Data, Never>?
-    private var stderrTask: Task<Data, Never>?
+    private let stdoutBuffer = OutputBuffer()
+    private let stderrBuffer = OutputBuffer()
     private var timeoutTask: Task<Void, Never>?
 
     init(
@@ -144,30 +144,32 @@ private final class ProcessExecution: @unchecked Sendable {
             process.environment = environment
         }
 
-        let capturesOutput = request.capturesOutput
-        let stdoutTask = Task.detached {
-            capturesOutput
-                ? stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-                : Data()
+        let outputHandler = request.outputHandler
+        if request.capturesOutput {
+            stdoutPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+                let data = handle.availableData
+                guard data.isEmpty == false else { handle.readabilityHandler = nil; return }
+                self?.stdoutBuffer.append(data)
+                outputHandler?(data, .standardOutput)
+            }
         }
-        let stderrTask = Task.detached {
-            stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        stderrPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            let data = handle.availableData
+            guard data.isEmpty == false else { handle.readabilityHandler = nil; return }
+            self?.stderrBuffer.append(data)
+            outputHandler?(data, .standardError)
         }
 
         lock.lock()
         self.process = process
-        self.stdoutTask = stdoutTask
-        self.stderrTask = stderrTask
         lock.unlock()
 
         process.terminationHandler = { [weak self] process in
             Task.detached {
-                let stdout = await stdoutTask.value
-                let stderr = await stderrTask.value
                 self?.finish(
                     terminationStatus: process.terminationStatus,
-                    stdout: stdout,
-                    stderr: stderr
+                    stdout: self?.stdoutBuffer.data ?? Data(),
+                    stderr: self?.stderrBuffer.data ?? Data()
                 )
             }
         }
@@ -237,8 +239,6 @@ private final class ProcessExecution: @unchecked Sendable {
             finalError = nil
         }
         let timeoutTask = self.timeoutTask
-        let stdoutTask = self.stdoutTask
-        let stderrTask = self.stderrTask
         lock.unlock()
 
         guard shouldResume else {
@@ -259,9 +259,6 @@ private final class ProcessExecution: @unchecked Sendable {
         if let stderrPipe {
             try? stderrPipe.fileHandleForReading.close()
         }
-        stdoutTask?.cancel()
-        stderrTask?.cancel()
-
         if let finalError {
             continuation.resume(throwing: finalError)
             return
@@ -283,4 +280,18 @@ private final class ProcessExecution: @unchecked Sendable {
         )
     }
 
+}
+
+private final class OutputBuffer: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage = Data()
+
+    var data: Data {
+        lock.lock(); defer { lock.unlock() }
+        return storage
+    }
+
+    func append(_ data: Data) {
+        lock.lock(); storage.append(data); lock.unlock()
+    }
 }
