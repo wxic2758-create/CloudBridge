@@ -1,0 +1,5 @@
+"error.missingHost" = "Enter the server address.";
+"error.missingUsername" = "Enter the SSH username.";
+"error.missingPassword" = "Enter a server password or choose an SSH private key.";
+"error.invalidPort" = "Enter a port between 1 and 65535.";
+"error.keyAccess" = "CloudBridge needs access to %@. Choose it again in the app.";

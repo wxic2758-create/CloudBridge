@@ -13,15 +13,15 @@ enum BrowserModelError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingHost:
-            "Enter the server address."
+            NSLocalizedString("error.missingHost", comment: "Missing server host")
         case .missingUsername:
-            "Enter the SSH username."
+            NSLocalizedString("error.missingUsername", comment: "Missing SSH username")
         case .missingPassword:
-            "Enter the server password."
+            NSLocalizedString("error.missingPassword", comment: "Missing password or key")
         case .invalidPort:
-            "Enter a port between 1 and 65535."
+            NSLocalizedString("error.invalidPort", comment: "Invalid SSH port")
         case .securityScopedAccessRequired(let path):
-            "CloudBridge needs permission for \(path). Choose it again with the in-app picker."
+            String(format: NSLocalizedString("error.keyAccess", comment: "Private key access required"), path)
         }
     }
 }

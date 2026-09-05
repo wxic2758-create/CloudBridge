@@ -1,0 +1,5 @@
+"error.missingHost" = "请输入服务器地址。";
+"error.missingUsername" = "请输入 SSH 用户名。";
+"error.missingPassword" = "请输入服务器密码，或选择 SSH 私钥。";
+"error.invalidPort" = "请输入 1 到 65535 之间的端口。";
+"error.keyAccess" = "CloudBridge 需要访问 %@，请在应用内重新选择。";
