@@ -107,7 +107,7 @@ Upload `build/CloudBridge.pkg` with Transporter or App Store Connect tooling.
 
 Use `AppStoreConnectSubmissionInfo.md` as the filled submission source. Prepare these before review:
 
-- App name: CloudBridge
+  - App name: CloudBridge: SFTP Transfer
 - Category: Developer Tools
 - Age rating
 - Support URL

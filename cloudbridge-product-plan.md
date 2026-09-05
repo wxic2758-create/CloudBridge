@@ -12,7 +12,7 @@
 
 ### 一句话定位
 
-**CloudBridge 是一款安静、可信、专注下载的 macOS SFTP 客户端，副标题为“远程下载管理”。**
+**CloudBridge: SFTP Transfer 是一款安静、可信、专注下载的 macOS SFTP 客户端，副标题为“远程下载管理”。**
 
 ### 用户问题
 

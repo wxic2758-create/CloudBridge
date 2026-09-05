@@ -4,7 +4,7 @@ Use this file as the source text when filling App Store Connect.
 
 ## App Information
 
-- Default app name: CloudBridge
+- Default app name: CloudBridge: SFTP Transfer
 - Bundle ID: com.dazhang.CloudBridge
 - SKU: cloudbridge-macos
 - Primary category: Developer Tools

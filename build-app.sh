@@ -49,7 +49,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key>
     <string>__APP_NAME__</string>
     <key>CFBundleIconFile</key>
-    <string>CloudBridge</string>
+    <string>CloudBridge: SFTP Transfer</string>
     <key>CFBundleIdentifier</key>
     <string>__BUNDLE_ID__</string>
     <key>CFBundleInfoDictionaryVersion</key>
