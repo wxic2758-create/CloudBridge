@@ -119,6 +119,13 @@ private final class ProcessExecution: @unchecked Sendable {
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
 
+        lock.lock()
+        guard didFinish == false else {
+            lock.unlock()
+            return
+        }
+        lock.unlock()
+
         process.executableURL = URL(filePath: request.executable)
         process.arguments = request.arguments
         process.currentDirectoryURL = request.currentDirectoryURL
@@ -159,6 +166,13 @@ private final class ProcessExecution: @unchecked Sendable {
 
         do {
             try process.run()
+            lock.lock()
+            let shouldTerminate = didFinish
+            lock.unlock()
+            if shouldTerminate {
+                process.terminate()
+                return
+            }
             if let standardInputData = request.standardInputData {
                 stdinPipe.fileHandleForWriting.write(standardInputData)
                 try stdinPipe.fileHandleForWriting.close()

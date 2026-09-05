@@ -284,7 +284,8 @@ actor SFTPClient {
         capturesOutput: Bool = true,
         standardInputData: Data? = nil,
         environment: [String: String]? = nil,
-        includeStandardErrorInSuccessfulOutput: Bool = false
+        includeStandardErrorInSuccessfulOutput: Bool = false,
+        timeout: Duration? = nil
     ) async throws -> String {
         do {
             return try await processRunner.run(
@@ -295,7 +296,8 @@ actor SFTPClient {
                     standardInputData: standardInputData,
                     environment: environment,
                     includeStandardErrorInSuccessfulOutput: includeStandardErrorInSuccessfulOutput,
-                    currentDirectoryURL: Self.connectionCacheURL()
+                    currentDirectoryURL: Self.connectionCacheURL(),
+                    timeout: timeout
                 )
             )
         } catch let error as ProcessRunnerError {
@@ -704,7 +706,8 @@ actor SFTPClient {
     ) async throws -> HostKeyIdentity {
         let output = try await runProcess(
             executable: "/usr/bin/ssh-keyscan",
-            arguments: ["-q", "-T", "10", "-p", "\(profile.port)", profile.host]
+            arguments: ["-q", "-T", "10", "-p", "\(profile.port)", profile.host],
+            timeout: .seconds(15)
         )
         guard let keyLine = output
             .split(whereSeparator: \.isNewline)
@@ -742,7 +745,8 @@ actor SFTPClient {
         let output = try await runProcess(
             executable: "/usr/bin/ssh-keygen",
             arguments: ["-lf", "-", "-E", "sha256"],
-            standardInputData: Data((knownHostsLine + "\n").utf8)
+            standardInputData: Data((knownHostsLine + "\n").utf8),
+            timeout: .seconds(15)
         )
         guard let fingerprint = output
             .split(whereSeparator: { $0 == " " || $0 == "\t" })
