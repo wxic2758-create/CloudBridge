@@ -49,7 +49,7 @@ CloudBridge 不提供云存储服务，也不会把用户的服务器地址、�
 
 ### Keywords
 
-SFTP,SSH,下载管理,远程下载,服务器文件,云服务器,文件传输,远程预览,开发者,运维
+SFTP文件传输,SSH远程下载,远程服务器文件,macOS下载管理,服务器文件预览
 
 ### Support URL
 
@@ -98,7 +98,7 @@ CloudBridge is not a cloud storage service. It does not send your server address
 
 ### Keywords
 
-SFTP,SSH,download manager,remote download,server files,file transfer,preview,macOS,developer,ops
+SFTP file transfer,SSH download manager,remote server files,macOS file download,server file preview
 
 ## App Review Information
 

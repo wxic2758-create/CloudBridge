@@ -108,6 +108,7 @@ Upload `build/CloudBridge.pkg` with Transporter or App Store Connect tooling.
 Use `AppStoreConnectSubmissionInfo.md` as the filled submission source. Prepare these before review:
 
   - App name: CloudBridge: SFTP Transfer
+  - Search positioning: SFTP file transfer, SSH remote download, macOS server file manager
 - Category: Developer Tools
 - Age rating
 - Support URL
