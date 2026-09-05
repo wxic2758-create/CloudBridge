@@ -6,6 +6,7 @@ struct ServerProfile: Codable, Equatable {
     var port = 22
     var username = ""
     var password = ""
+    var privateKeyPath: String?
 
     func preparedForConnection() -> ServerProfile {
         var profile = self
@@ -22,6 +23,22 @@ struct SavedServer: Codable, Identifiable, Equatable {
     var port: Int
     var username: String
     var defaultRemotePath: String
+    var privateKeyPath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, host, port, username, defaultRemotePath, privateKeyPath
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        host = try c.decode(String.self, forKey: .host)
+        port = try c.decode(Int.self, forKey: .port)
+        username = try c.decode(String.self, forKey: .username)
+        defaultRemotePath = try c.decode(String.self, forKey: .defaultRemotePath)
+        privateKeyPath = try c.decodeIfPresent(String.self, forKey: .privateKeyPath)
+    }
 
     init(
         id: UUID = UUID(),
@@ -29,7 +46,8 @@ struct SavedServer: Codable, Identifiable, Equatable {
         host: String = "",
         port: Int = 22,
         username: String = "",
-        defaultRemotePath: String = "."
+        defaultRemotePath: String = ".",
+        privateKeyPath: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -37,6 +55,7 @@ struct SavedServer: Codable, Identifiable, Equatable {
         self.port = port
         self.username = username
         self.defaultRemotePath = defaultRemotePath
+        self.privateKeyPath = privateKeyPath
     }
 
     var displayName: String {
@@ -49,7 +68,13 @@ struct SavedServer: Codable, Identifiable, Equatable {
     }
 
     func preparedForConnection(password: String) -> ServerProfile {
-        ServerProfile(host: host, port: port, username: username, password: password)
+        ServerProfile(
+            host: host,
+            port: port,
+            username: username,
+            password: password,
+            privateKeyPath: privateKeyPath
+        )
             .preparedForConnection()
     }
 }

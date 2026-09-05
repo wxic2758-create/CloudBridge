@@ -133,6 +133,21 @@ final class BrowserModel {
         statusMessage = "Ready to connect"
     }
 
+    func choosePrivateKey() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.item]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        if panel.runModal() == .OK, let url = panel.url {
+            editingServer.privateKeyPath = url.path
+        }
+    }
+
+    func clearPrivateKey() {
+        editingServer.privateKeyPath = nil
+    }
+
     func deleteSelectedServer() {
         guard let selectedServerID, isConnected == false, isBusy == false else {
             return
@@ -195,8 +210,14 @@ final class BrowserModel {
             if (1...65535).contains(connectionProfile.port) == false {
                 throw BrowserModelError.invalidPort
             }
-            if connectionProfile.password.isEmpty {
+            if connectionProfile.password.isEmpty && (connectionProfile.privateKeyPath?.isEmpty ?? true) {
                 throw BrowserModelError.missingPassword
+            }
+            if let key = connectionProfile.privateKeyPath, !key.isEmpty {
+                var isDirectory: ObjCBool = false
+                guard FileManager.default.fileExists(atPath: key, isDirectory: &isDirectory), !isDirectory.boolValue else {
+                    throw BrowserModelError.securityScopedAccessRequired(key)
+                }
             }
 
             self.profile = connectionProfile

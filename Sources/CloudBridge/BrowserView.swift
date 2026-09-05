@@ -643,6 +643,19 @@ private struct ServerEditor: View {
                     }
                 }
 
+                EditorField(label: "SSH 私钥", hint: "可选；选择后可使用私钥认证") {
+                    HStack {
+                        Text(model.editingServer.privateKeyPath ?? "未选择私钥")
+                            .foregroundStyle(model.editingServer.privateKeyPath == nil ? .secondary : .primary)
+                            .lineLimit(1)
+                        Spacer()
+                        Button("选择…") { model.choosePrivateKey() }
+                        if model.editingServer.privateKeyPath != nil {
+                            Button("清除") { model.clearPrivateKey() }
+                        }
+                    }
+                }
+
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "lock.shield")
                         .foregroundStyle(.secondary)

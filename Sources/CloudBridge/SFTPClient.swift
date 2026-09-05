@@ -199,7 +199,7 @@ actor SFTPClient {
             throw SFTPClientError.missingConnectionDetails
         }
 
-        if profile.password.isEmpty == false {
+        if profile.privateKeyPath != nil || profile.password.isEmpty == false {
             return try await runPasswordCommand(
                 executable: "/usr/bin/ssh",
                 arguments: makeSSHArguments(for: profile, command: command),
@@ -252,7 +252,7 @@ actor SFTPClient {
 
         let input = Data((commands.joined(separator: "\n") + "\n").utf8)
         // OpenSSH batch mode disables password prompts, including SSH_ASKPASS.
-        let arguments = makeSFTPArguments(for: profile, batchMode: profile.password.isEmpty)
+        let arguments = makeSFTPArguments(for: profile, batchMode: profile.password.isEmpty && (profile.privateKeyPath?.isEmpty ?? true))
 
         if profile.password.isEmpty == false {
             let output = try await runPasswordCommand(
@@ -339,6 +339,10 @@ actor SFTPClient {
             "-o", "ControlPath=\(Self.controlPath())"
         ]
 
+        if let privateKeyPath = profile.privateKeyPath, privateKeyPath.isEmpty == false {
+            arguments.append(contentsOf: ["-i", privateKeyPath])
+        }
+
         if profile.password.isEmpty == false {
             arguments.append(contentsOf: Self.passwordAuthenticationArguments)
             arguments.append(contentsOf: ["-o", "BatchMode=no"])
@@ -376,6 +380,10 @@ actor SFTPClient {
             "-o", "ControlPath=\(Self.controlPath())"
         ]
 
+        if let privateKeyPath = profile.privateKeyPath, privateKeyPath.isEmpty == false {
+            arguments.append(contentsOf: ["-i", privateKeyPath])
+        }
+
         if profile.password.isEmpty == false {
             arguments.append(contentsOf: Self.passwordAuthenticationArguments)
         } else {
@@ -410,6 +418,10 @@ actor SFTPClient {
             "-o", "ControlPath=\(Self.controlPath())"
         ]
 
+        if let privateKeyPath = profile.privateKeyPath, privateKeyPath.isEmpty == false {
+            arguments.append(contentsOf: ["-i", privateKeyPath])
+        }
+
         if profile.password.isEmpty == false {
             arguments.append(contentsOf: Self.passwordAuthenticationArguments)
             arguments.append(contentsOf: ["-o", "BatchMode=no"])
@@ -417,6 +429,22 @@ actor SFTPClient {
                 executable: "/usr/bin/ssh",
                 arguments: arguments + ["\(profile.username)@\(profile.host)"],
                 password: profile.password,
+                capturesOutput: false
+            )
+        }
+        else if profile.privateKeyPath?.isEmpty == false {
+            arguments.append(contentsOf: ["-o", "BatchMode=no"])
+            _ = try? await runPasswordCommand(
+                executable: "/usr/bin/ssh",
+                arguments: arguments + ["\(profile.username)@\(profile.host)"],
+                password: profile.password,
+                capturesOutput: false
+            )
+        } else {
+            arguments.append(contentsOf: ["-o", "BatchMode=yes"])
+            _ = try? await runProcess(
+                executable: "/usr/bin/ssh",
+                arguments: arguments + ["\(profile.username)@\(profile.host)"],
                 capturesOutput: false
             )
         }
