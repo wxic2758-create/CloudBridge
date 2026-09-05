@@ -38,7 +38,7 @@ CloudBridge is not a cloud storage service. It does not send your server address
 
 ### Keywords
 
-SFTP,SSH,file transfer,server,remote files,file manager,cloud,preview,download,developer
+SFTP file transfer,SSH download manager,remote server files,macOS file download,server preview
 
 ## What's New
 
