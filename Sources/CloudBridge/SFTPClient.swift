@@ -44,6 +44,9 @@ enum HostKeyTrustError: LocalizedError {
 }
 
 actor SFTPClient {
+    enum DownloadConflictStrategy {
+        case rename, replace, skip
+    }
     private enum TransferMode {
         case sftp
         case legacySSH
@@ -102,14 +105,21 @@ actor SFTPClient {
         }
     }
 
-    func download(_ item: RemoteItem, to localDirectory: URL) async throws -> URL {
+    func download(_ item: RemoteItem, to localDirectory: URL, conflictStrategy: DownloadConflictStrategy = .rename) async throws -> URL {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: localDirectory.path, isDirectory: &isDirectory),
               isDirectory.boolValue else {
             throw SFTPClientError.invalidLocalDirectory
         }
 
-        let destination = uniqueDestinationURL(for: item.name, in: localDirectory)
+        let requested = localDirectory.appending(path: item.name)
+        if conflictStrategy == .skip, FileManager.default.fileExists(atPath: requested.path) {
+            return requested
+        }
+        if conflictStrategy == .replace, FileManager.default.fileExists(atPath: requested.path) {
+            try FileManager.default.removeItem(at: requested)
+        }
+        let destination = conflictStrategy == .rename ? uniqueDestinationURL(for: item.name, in: localDirectory) : requested
 
         switch transferMode {
         case .sftp:
