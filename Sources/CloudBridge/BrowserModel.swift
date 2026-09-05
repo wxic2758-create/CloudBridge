@@ -7,6 +7,7 @@ enum BrowserModelError: LocalizedError {
     case missingHost
     case missingUsername
     case missingPassword
+    case invalidPort
     case securityScopedAccessRequired(String)
 
     var errorDescription: String? {
@@ -17,6 +18,8 @@ enum BrowserModelError: LocalizedError {
             "Enter the SSH username."
         case .missingPassword:
             "Enter the server password."
+        case .invalidPort:
+            "Enter a port between 1 and 65535."
         case .securityScopedAccessRequired(let path):
             "CloudBridge needs permission for \(path). Choose it again with the in-app picker."
         }
@@ -95,6 +98,13 @@ final class BrowserModel {
         server.host = server.host.trimmingCharacters(in: .whitespacesAndNewlines)
         server.username = server.username.trimmingCharacters(in: .whitespacesAndNewlines)
         server.defaultRemotePath = normalizedRemotePath(server.defaultRemotePath)
+
+        guard (1...65535).contains(server.port) else {
+            let message = BrowserModelError.invalidPort.localizedDescription
+            errorMessage = message
+            statusMessage = message
+            return
+        }
 
         if let index = savedServers.firstIndex(where: { $0.id == server.id }) {
             savedServers[index] = server
@@ -181,6 +191,9 @@ final class BrowserModel {
             }
             if connectionProfile.username.isEmpty {
                 throw BrowserModelError.missingUsername
+            }
+            if (1...65535).contains(connectionProfile.port) == false {
+                throw BrowserModelError.invalidPort
             }
             if connectionProfile.password.isEmpty {
                 throw BrowserModelError.missingPassword
