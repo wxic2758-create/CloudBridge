@@ -51,6 +51,11 @@ actor SFTPClient {
 
     private var profile: ServerProfile?
     private var transferMode = TransferMode.sftp
+    private let processRunner: any ProcessRunning
+
+    init(processRunner: any ProcessRunning = ProcessRunner()) {
+        self.processRunner = processRunner
+    }
 
     func connect(profile: ServerProfile, approvedFingerprint: String? = nil) async throws {
         guard profile.host.isEmpty == false,
@@ -281,54 +286,23 @@ actor SFTPClient {
         environment: [String: String]? = nil,
         includeStandardErrorInSuccessfulOutput: Bool = false
     ) async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
-            let completion = ProcessCompletion(continuation)
-            let process = Process()
-            let stdinPipe = Pipe()
-            let stdoutPipe = Pipe()
-            let stderrPipe = Pipe()
-
-            process.executableURL = URL(filePath: executable)
-            process.arguments = arguments
-            // Keep SSH control socket names short while storing them inside the
-            // app sandbox. OpenSSH resolves the relative ControlPath below from
-            // this directory; an absolute container path can exceed 104 bytes.
-            process.currentDirectoryURL = Self.connectionCacheURL()
-            process.standardInput = standardInputData == nil ? FileHandle.nullDevice : stdinPipe
-            process.standardOutput = capturesOutput ? stdoutPipe : FileHandle.nullDevice
-            process.standardError = stderrPipe
-            if let environment {
-                process.environment = environment
+        do {
+            return try await processRunner.run(
+                ProcessRequest(
+                    executable: executable,
+                    arguments: arguments,
+                    capturesOutput: capturesOutput,
+                    standardInputData: standardInputData,
+                    environment: environment,
+                    includeStandardErrorInSuccessfulOutput: includeStandardErrorInSuccessfulOutput,
+                    currentDirectoryURL: Self.connectionCacheURL()
+                )
+            )
+        } catch let error as ProcessRunnerError {
+            if case let .failed(message) = error {
+                throw SFTPClientError.processFailed(Self.cleanProcessMessage(message))
             }
-
-            process.terminationHandler = { process in
-                let stdout = capturesOutput ? stdoutPipe.fileHandleForReading.readDataToEndOfFile() : Data()
-                let stderr = stderrPipe.fileHandleForReading.readDataToEndOfFile()
-                let output = String(data: stdout, encoding: .utf8) ?? ""
-                let error = String(data: stderr, encoding: .utf8) ?? ""
-
-                if process.terminationStatus == 0 {
-                    completion.resume(
-                        returning: output + (includeStandardErrorInSuccessfulOutput ? error : "")
-                    )
-                } else {
-                    completion.resume(throwing: SFTPClientError.processFailed(Self.cleanProcessMessage(error + output)))
-                }
-            }
-
-            do {
-                try process.run()
-                if let standardInputData {
-                    stdinPipe.fileHandleForWriting.write(standardInputData)
-                    try stdinPipe.fileHandleForWriting.close()
-                }
-            } catch {
-                process.terminationHandler = nil
-                if process.isRunning {
-                    process.terminate()
-                }
-                completion.resume(throwing: error)
-            }
+            throw error
         }
     }
 
@@ -878,43 +852,5 @@ actor SFTPClient {
             return directory + name
         }
         return directory + "/" + name
-    }
-}
-
-private final class ProcessCompletion: @unchecked Sendable {
-    private let lock = NSLock()
-    private var didResume = false
-    private let continuation: CheckedContinuation<String, any Error>
-
-    init(_ continuation: CheckedContinuation<String, any Error>) {
-        self.continuation = continuation
-    }
-
-    func resume(returning output: String) {
-        guard markResumed() else {
-            return
-        }
-        continuation.resume(returning: output)
-    }
-
-    func resume(throwing error: any Error) {
-        guard markResumed() else {
-            return
-        }
-        continuation.resume(throwing: error)
-    }
-
-    private func markResumed() -> Bool {
-        lock.lock()
-        defer {
-            lock.unlock()
-        }
-
-        guard didResume == false else {
-            return false
-        }
-
-        didResume = true
-        return true
     }
 }

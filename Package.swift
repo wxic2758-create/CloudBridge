@@ -15,6 +15,10 @@ let package = Package(
         .executableTarget(
             name: "CloudBridge",
             dependencies: []
+        ),
+        .testTarget(
+            name: "CloudBridgeTests",
+            dependencies: ["CloudBridge"]
         )
     ]
 )
