@@ -60,6 +60,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <string>6.0</string>
     <key>CFBundleName</key>
     <string>__APP_NAME__</string>
+    <key>CFBundleDisplayName</key>
+    <string>CloudBridge: SFTP Transfer</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
