@@ -430,6 +430,8 @@ struct BrowserView: View {
                 List(model.downloadTasks) { task in
                     DownloadTaskRow(task: task) {
                         model.reveal(task)
+                    } cancel: {
+                        model.cancelDownload()
                     }
                 }
                 .listStyle(.inset)
@@ -708,6 +710,7 @@ private struct EditorField<Content: View>: View {
 private struct DownloadTaskRow: View {
     let task: DownloadTask
     let reveal: () -> Void
+    let cancel: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -736,6 +739,9 @@ private struct DownloadTaskRow: View {
         case .completed:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
+        case .cancelled:
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.secondary)
         case .failed:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
@@ -746,13 +752,17 @@ private struct DownloadTaskRow: View {
     private var taskAction: some View {
         switch task.status {
         case .downloading:
-            Text("正在下载")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Button("取消", action: cancel)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
         case .completed:
             Button("在 Finder 中显示", action: reveal)
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+        case .cancelled:
+            Text("已取消")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         case .failed(let message):
             Text(message)
                 .font(.caption)
@@ -761,6 +771,7 @@ private struct DownloadTaskRow: View {
                 .frame(maxWidth: 220, alignment: .trailing)
         }
     }
+
 }
 
 #Preview {

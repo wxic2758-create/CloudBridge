@@ -4,6 +4,7 @@ enum DownloadState: Equatable {
     case idle
     case downloading(String)
     case completed(String)
+    case cancelled(String)
     case failed(String)
 }
 
@@ -11,6 +12,7 @@ struct DownloadTask: Identifiable, Equatable {
     enum Status: Equatable {
         case downloading
         case completed
+        case cancelled
         case failed(String)
     }
 

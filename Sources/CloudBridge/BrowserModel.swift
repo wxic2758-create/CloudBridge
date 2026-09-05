@@ -48,6 +48,7 @@ final class BrowserModel {
     private let client = SFTPClient()
     private let previewer = QuickLookPreviewer()
     private var activeDownloadTaskID: DownloadTask.ID?
+    private var activeDownloadOperation: Task<Void, Never>?
     private var pendingConnectionProfile: ServerProfile?
 
     init() {
@@ -373,6 +374,15 @@ final class BrowserModel {
         }
     }
 
+    func cancelDownload() {
+        guard isDownloading else {
+            return
+        }
+
+        statusMessage = "正在取消下载..."
+        activeDownloadOperation?.cancel()
+    }
+
     func chooseLocalDirectory() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -435,9 +445,13 @@ final class BrowserModel {
         isDownloading = true
         errorMessage = nil
 
-        Task { @MainActor in
+        activeDownloadOperation = Task { @MainActor in
             do {
                 try await operation()
+            } catch let error as ProcessRunnerError where error == .cancelled {
+                markActiveDownloadCancelled()
+            } catch is CancellationError {
+                markActiveDownloadCancelled()
             } catch {
                 errorMessage = error.localizedDescription
                 statusMessage = error.localizedDescription
@@ -447,8 +461,19 @@ final class BrowserModel {
                 }
             }
             activeDownloadTaskID = nil
+            activeDownloadOperation = nil
             isDownloading = false
         }
+    }
+
+    private func markActiveDownloadCancelled() {
+        if let activeDownloadTaskID {
+            updateTask(activeDownloadTaskID, status: .cancelled)
+        }
+        if case .downloading(let itemName) = downloadState {
+            downloadState = .cancelled(itemName)
+        }
+        statusMessage = "下载已取消"
     }
 
     private func parentPath(for path: String) -> String {
