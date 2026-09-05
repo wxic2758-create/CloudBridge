@@ -14,6 +14,7 @@
 		100000000000000000000005 /* RemoteItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000015 /* RemoteItem.swift */; };
 		100000000000000000000006 /* SFTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000016 /* SFTPClient.swift */; };
 		100000000000000000000008 /* ServerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* ServerProfile.swift */; };
+		300000000000000000000003 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000004 /* ProcessRunner.swift */; };
 		100000000000000000000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000019 /* Assets.xcassets */; };
 		200000000000000000000001 /* ssh-askpass.sh in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* ssh-askpass.sh */; };
 		300000000000000000000001 /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000002 /* Resources */; };
@@ -29,6 +30,7 @@
 		100000000000000000000016 /* SFTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SFTPClient.swift; sourceTree = "<group>"; };
 		100000000000000000000018 /* ServerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerProfile.swift; sourceTree = "<group>"; };
 		100000000000000000000019 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		300000000000000000000004 /* ProcessRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRunner.swift; sourceTree = "<group>"; };
 		100000000000000000000020 /* CloudBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CloudBridge.entitlements; sourceTree = "<group>"; };
 		200000000000000000000002 /* ssh-askpass.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Resources/ssh-askpass.sh; sourceTree = "<group>"; };
 		300000000000000000000002 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = "<group>"; };
@@ -65,6 +67,7 @@
 				100000000000000000000015 /* RemoteItem.swift */,
 				100000000000000000000016 /* SFTPClient.swift */,
 				100000000000000000000018 /* ServerProfile.swift */,
+				300000000000000000000004 /* ProcessRunner.swift */,
 			);
 			path = CloudBridge;
 			sourceTree = "<group>";
@@ -173,6 +176,7 @@
 				100000000000000000000005 /* RemoteItem.swift in Sources */,
 				100000000000000000000006 /* SFTPClient.swift in Sources */,
 				100000000000000000000008 /* ServerProfile.swift in Sources */,
+				300000000000000000000003 /* ProcessRunner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
