@@ -634,4 +634,18 @@ private final class QuickLookPreviewer: NSObject, QLPreviewPanelDataSource, QLPr
     func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
         previewURL.map { $0 as NSURL }
     }
+
+    func previewPanelWillClose(_ panel: QLPreviewPanel!) {
+        cleanupPreviewFile()
+    }
+
+    private func cleanupPreviewFile() {
+        guard let previewURL else {
+            return
+        }
+
+        let previewDirectory = previewURL.deletingLastPathComponent()
+        try? FileManager.default.removeItem(at: previewDirectory)
+        self.previewURL = nil
+    }
 }
