@@ -1,0 +1,6 @@
+{
+  "source": "en",
+  "locales": ["en", "sk", "pl", "sv", "he", "ms", "da", "no", "el", "ca", "cs", "ro", "zh-CN", "uk", "hr", "hu", "nl", "fi", "id", "vi", "ja", "it", "ru", "zh-TW", "ar", "hi", "de", "ko", "th", "tr", "es-ES", "es-MX", "fr-CA", "fr-FR", "pt-BR", "pt-PT"],
+  "rtl": ["ar", "he"],
+  "reviewState": "draft"
+}
