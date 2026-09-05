@@ -23,6 +23,11 @@ struct DownloadTask: Identifiable, Equatable {
     let isDirectory: Bool
     var destination: URL?
     var status: Status
+    var progress: Double?
+    var bytesTransferred: Int64?
+    var totalBytes: Int64?
+    var speedBytesPerSecond: Double?
+    var estimatedRemainingSeconds: TimeInterval?
 
     init(itemName: String, remotePath: String, serverName: String, isDirectory: Bool) {
         self.id = UUID()
@@ -32,5 +37,10 @@ struct DownloadTask: Identifiable, Equatable {
         self.isDirectory = isDirectory
         self.destination = nil
         self.status = .downloading
+        self.progress = nil
+        self.bytesTransferred = nil
+        self.totalBytes = nil
+        self.speedBytesPerSecond = nil
+        self.estimatedRemainingSeconds = nil
     }
 }
