@@ -344,7 +344,9 @@ actor SFTPClient {
         }
 
         if profile.password.isEmpty == false {
-            arguments.append(contentsOf: Self.passwordAuthenticationArguments)
+            if profile.privateKeyPath?.isEmpty ?? true {
+                arguments.append(contentsOf: Self.passwordAuthenticationArguments)
+            }
             arguments.append(contentsOf: ["-o", "BatchMode=no"])
         } else {
             arguments.append(contentsOf: ["-o", "BatchMode=yes"])
