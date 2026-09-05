@@ -432,6 +432,8 @@ struct BrowserView: View {
                         model.reveal(task)
                     } cancel: {
                         model.cancelDownload()
+                    } retry: {
+                        model.retry(task)
                     }
                 }
                 .listStyle(.inset)
@@ -711,6 +713,7 @@ private struct DownloadTaskRow: View {
     let task: DownloadTask
     let reveal: () -> Void
     let cancel: () -> Void
+    let retry: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -764,11 +767,16 @@ private struct DownloadTaskRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case .failed(let message):
-            Text(message)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .frame(maxWidth: 220, alignment: .trailing)
+            HStack(spacing: 8) {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: 220, alignment: .trailing)
+                Button("重试", action: retry)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
         }
     }
 

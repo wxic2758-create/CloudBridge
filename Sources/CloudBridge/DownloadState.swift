@@ -20,14 +20,16 @@ struct DownloadTask: Identifiable, Equatable {
     let itemName: String
     let remotePath: String
     let serverName: String
+    let isDirectory: Bool
     var destination: URL?
     var status: Status
 
-    init(itemName: String, remotePath: String, serverName: String) {
+    init(itemName: String, remotePath: String, serverName: String, isDirectory: Bool) {
         self.id = UUID()
         self.itemName = itemName
         self.remotePath = remotePath
         self.serverName = serverName
+        self.isDirectory = isDirectory
         self.destination = nil
         self.status = .downloading
     }

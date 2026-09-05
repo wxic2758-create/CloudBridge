@@ -348,7 +348,8 @@ final class BrowserModel {
             let task = DownloadTask(
                 itemName: item.name,
                 remotePath: item.path,
-                serverName: self.selectedServer?.displayName ?? self.profile.host
+                serverName: self.selectedServer?.displayName ?? self.profile.host,
+                isDirectory: item.isDirectory
             )
             self.downloadTasks.insert(task, at: 0)
             self.activeDownloadTaskID = task.id
@@ -381,6 +382,28 @@ final class BrowserModel {
 
         statusMessage = "正在取消下载..."
         activeDownloadOperation?.cancel()
+    }
+
+    func retry(_ task: DownloadTask) {
+        guard isConnected else {
+            statusMessage = "请先连接服务器后再重试下载"
+            return
+        }
+
+        guard task.serverName == (selectedServer?.displayName ?? profile.host) else {
+            statusMessage = "请切换到原服务器后再重试下载"
+            return
+        }
+
+        let item = RemoteItem(
+            id: task.remotePath,
+            name: task.itemName,
+            path: task.remotePath,
+            kind: task.isDirectory ? .directory : .file,
+            size: nil,
+            modifiedAt: nil
+        )
+        download(item)
     }
 
     func chooseLocalDirectory() {
