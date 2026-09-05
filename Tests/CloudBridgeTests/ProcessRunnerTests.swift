@@ -2,6 +2,24 @@ import XCTest
 @testable import CloudBridge
 
 final class ProcessRunnerTests: XCTestCase {
+    final class StreamCollector: @unchecked Sendable {
+        let lock = NSLock()
+        var streams: [ProcessOutputStream] = []
+    }
+
+    func testOutputHandlerReceivesBothStreams() async throws {
+        let runner = ProcessRunner()
+        let collector = StreamCollector()
+        _ = try await runner.run(ProcessRequest(
+            executable: "/bin/sh",
+            arguments: ["-c", "printf out; printf err >&2"],
+            outputHandler: { _, stream in
+                collector.lock.lock(); collector.streams.append(stream); collector.lock.unlock()
+            }
+        ))
+        XCTAssertTrue(collector.streams.contains(.standardOutput))
+        XCTAssertTrue(collector.streams.contains(.standardError))
+    }
     func testRunDrainsLargeStandardOutputAndStandardError() async throws {
         let runner = ProcessRunner()
         let request = ProcessRequest(

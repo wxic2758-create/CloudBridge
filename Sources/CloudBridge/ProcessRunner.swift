@@ -1,5 +1,10 @@
 import Foundation
 
+enum ProcessOutputStream: Sendable, Equatable {
+    case standardOutput
+    case standardError
+}
+
 struct ProcessRequest: Sendable {
     let executable: String
     let arguments: [String]
@@ -9,6 +14,7 @@ struct ProcessRequest: Sendable {
     let includeStandardErrorInSuccessfulOutput: Bool
     let currentDirectoryURL: URL?
     let timeout: Duration?
+    let outputHandler: (@Sendable (Data, ProcessOutputStream) -> Void)?
 
     init(
         executable: String,
@@ -18,7 +24,8 @@ struct ProcessRequest: Sendable {
         environment: [String: String]? = nil,
         includeStandardErrorInSuccessfulOutput: Bool = false,
         currentDirectoryURL: URL? = nil,
-        timeout: Duration? = nil
+        timeout: Duration? = nil,
+        outputHandler: (@Sendable (Data, ProcessOutputStream) -> Void)? = nil
     ) {
         self.executable = executable
         self.arguments = arguments
@@ -28,6 +35,7 @@ struct ProcessRequest: Sendable {
         self.includeStandardErrorInSuccessfulOutput = includeStandardErrorInSuccessfulOutput
         self.currentDirectoryURL = currentDirectoryURL
         self.timeout = timeout
+        self.outputHandler = outputHandler
     }
 }
 
@@ -235,6 +243,13 @@ private final class ProcessExecution: @unchecked Sendable {
 
         guard shouldResume else {
             return
+        }
+
+        if stdout.isEmpty == false {
+            request.outputHandler?(stdout, .standardOutput)
+        }
+        if stderr.isEmpty == false {
+            request.outputHandler?(stderr, .standardError)
         }
 
         timeoutTask?.cancel()
