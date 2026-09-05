@@ -34,6 +34,10 @@ cp "$BUILD_DIR/CloudBridge" "$MACOS_DIR/$APP_NAME"
 iconutil -c icns "$ROOT_DIR/Assets/CloudBridge.iconset" -o "$RESOURCES_DIR/CloudBridge.icns"
 cp "$ROOT_DIR/Resources/ssh-askpass.sh" "$RESOURCES_DIR/ssh-askpass.sh"
 chmod 755 "$RESOURCES_DIR/ssh-askpass.sh"
+for locale_dir in "$ROOT_DIR"/Resources/*.lproj; do
+    [[ -d "$locale_dir" ]] || continue
+    cp -R "$locale_dir" "$RESOURCES_DIR/"
+done
 
 if [[ -n "$APPSTORE_PROFILE" ]]; then
     cp "$APPSTORE_PROFILE" "$CONTENTS_DIR/embedded.provisionprofile"
@@ -49,7 +53,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key>
     <string>__APP_NAME__</string>
     <key>CFBundleIconFile</key>
-    <string>CloudBridge: SFTP Transfer</string>
+    <string>CloudBridge.icns</string>
     <key>CFBundleIdentifier</key>
     <string>__BUNDLE_ID__</string>
     <key>CFBundleInfoDictionaryVersion</key>
