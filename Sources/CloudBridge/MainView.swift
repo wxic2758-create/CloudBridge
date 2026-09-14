@@ -60,10 +60,9 @@ struct MainView: View {
     @Environment(BrowserModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
-    @State private var section = 0
+    @Binding var section: AppSection
     @State private var query = ""
     @State private var removal = false
-    @State private var privacyExpanded = false
     @State private var workspaceFrames: [String: CGRect] = [:]
     @State private var downloadFlight: DownloadFlight?
     @State private var downloadFlightArrived = false
@@ -79,8 +78,7 @@ struct MainView: View {
             header
             Divider().opacity(0.5)
             Group {
-                if section == 1 { downloads }
-                else if section == 2 { preferences }
+                if section == .downloads { downloads }
                 else if model.isConnected { files }
                 else { connections }
             }
@@ -113,9 +111,9 @@ struct MainView: View {
             Button(copy("action.cancel"), role: .cancel) {}
         } message: { Text(copy("server.removeHelp")) }
         .onChange(of: model.currentPath) { _, _ in query = "" }
-        .onChange(of: model.isConnected) { _, connected in if connected { section = 0 } }
+        .onChange(of: model.isConnected) { _, connected in if connected { section = .servers } }
         .onChange(of: section) { _, value in
-            if value == 1 { downloadAvailabilityRevision &+= 1 }
+            if value == .downloads { downloadAvailabilityRevision &+= 1 }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { downloadAvailabilityRevision &+= 1 }
@@ -177,50 +175,32 @@ struct MainView: View {
                 Text("CloudBridge").font(.title3.weight(.semibold))
             }
             Spacer()
-            HStack(spacing: 2) {
-                ForEach(Array(["nav.servers", "nav.tasks", "nav.settings"].enumerated()), id: \.offset) { index, key in
-                    Button { section = index } label: {
-                        ZStack {
-                            Text(copy(key))
-                                .font(.system(size: 13, weight: .medium))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
-                            if index == 1 {
-                                Text("\(min(model.activeDownloadCount, 99))")
-                                    .font(.caption2.weight(.semibold))
-                                    .monospacedDigit()
-                                    .foregroundStyle(Finish.lilac)
-                                    .frame(width: 22, height: 18)
-                                    .background(Finish.lilac.opacity(0.14), in: Capsule())
-                                    .opacity(model.activeDownloadCount > 0 ? 1 : 0)
-                                    .accessibilityHidden(model.activeDownloadCount == 0)
-                                    .frame(maxWidth: .infinity, alignment: .trailing)
-                                    .padding(.trailing, 8)
-                            }
-                        }
-                        .frame(width: 112, height: 36)
-                    }
-                    .buttonStyle(.plain)
-                    .background(
-                        section == index || (index == 1 && downloadTabAcknowledged)
-                            ? .white.opacity(0.09) : .clear,
-                        in: RoundedRectangle(cornerRadius: 8)
+            Picker("", selection: $section) {
+                Text(copy("nav.servers")).tag(AppSection.servers)
+                Text(downloadSectionTitle).tag(AppSection.downloads)
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .controlSize(.large)
+            .frame(width: 240)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: WorkspaceFrames.self,
+                        value: ["destination": proxy.frame(in: .named("cloudbridgeWindow"))]
                     )
-                    .background {
-                        if index == 1 {
-                            GeometryReader { proxy in
-                                Color.clear.preference(
-                                    key: WorkspaceFrames.self,
-                                    value: ["destination": proxy.frame(in: .named("cloudbridgeWindow"))]
-                                )
-                            }
-                        }
-                    }
-                    .foregroundStyle(section == index ? .primary : .secondary)
-                    .accessibilityAddTraits(section == index ? .isSelected : [])
                 }
             }
+            .overlay {
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(Finish.lilac.opacity(downloadTabAcknowledged ? 0.55 : 0), lineWidth: 1.5)
+            }
         }.padding(.horizontal, 30).padding(.vertical, 20)
+    }
+
+    private var downloadSectionTitle: String {
+        guard model.activeDownloadCount > 0 else { return copy("nav.tasks") }
+        return "\(copy("nav.tasks")) \(min(model.activeDownloadCount, 99))"
     }
 
     private var connections: some View {
@@ -281,12 +261,19 @@ struct MainView: View {
                                 .background(.white.opacity(model.selectedServerID == server.id ? 0.08 : 0.025), in: RoundedRectangle(cornerRadius: 11))
                                 .accessibilityAddTraits(model.selectedServerID == server.id ? .isSelected : [])
                         }
-                        Button {
+                        HStack {
+                            Spacer()
+                            Button {
                             model.errorMessage = nil
                             model.connect()
                         } label: {
-                            HStack { if model.isLoading { ProgressView().controlSize(.small) }; Text(copy(model.isLoading ? "connection.connecting" : "action.connect")) }.frame(maxWidth: .infinity)
-                        }.buttonStyle(BridgeActionStyle(prominent: true)).disabled(!canManage || model.selectedServer == nil)
+                            HStack { if model.isLoading { ProgressView().controlSize(.small) }; Text(copy(model.isLoading ? "connection.connecting" : "action.connect")) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(!canManage || model.selectedServer == nil)
+                        }
                     } else {
                         Button { model.errorMessage = nil; model.newServer() } label: { Label(copy("action.addServer"), systemImage: "plus").frame(maxWidth: .infinity) }.buttonStyle(BridgeActionStyle(prominent: true))
                     }
@@ -472,13 +459,14 @@ struct MainView: View {
                         .buttonStyle(.borderless)
                     }
                 }
-                Text(copy("tasks.help")).foregroundStyle(.secondary)
                 if model.downloadTasks.isEmpty {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 12) {
                         Image(systemName: "arrow.down.to.line").font(.largeTitle).foregroundStyle(Finish.lilac)
                         Text(copy("tasks.empty")).font(.title3)
                         Text(copy("tasks.emptyHelp")).foregroundStyle(.secondary)
-                    }.frame(maxWidth: .infinity).padding(.vertical, 50).modifier(Panel())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 34)
                 } else {
                     LazyVStack(spacing: 10) {
                         ForEach(model.downloadTasks) { task in downloadRow(task) }
@@ -613,15 +601,15 @@ struct MainView: View {
                 model.revealDownloaded(item)
             }
         case .localCopy:
-            localStatusButton("checkmark.circle.fill", help: "file.localCopy", selected: selected) {
+            localStatusButton("doc.badge.checkmark", help: "file.localCopy", selected: selected) {
                 model.revealDownloaded(item)
             }
         case .missing:
-            localStatusButton("checkmark.circle", help: "file.localMissing", enabled: model.canQueueDownloads, selected: selected) {
+            localStatusButton("exclamationmark.circle", help: "file.localMissing", enabled: model.canQueueDownloads, selected: selected) {
                 model.download(item)
             }
         case .remoteUpdated:
-            localStatusButton("arrow.clockwise.circle.fill", help: "file.remoteUpdated", enabled: model.canQueueDownloads, selected: selected) {
+            localStatusButton("arrow.clockwise.circle", help: "file.remoteUpdated", enabled: model.canQueueDownloads, selected: selected) {
                 model.download(item)
             }
         case .none:
@@ -702,7 +690,13 @@ struct MainView: View {
         }
     }
 
-    private var preferences: some View {
+}
+
+struct SettingsView: View {
+    @Environment(BrowserModel.self) private var model
+    @State private var privacyExpanded = false
+
+    var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 Text(copy("nav.settings")).font(.largeTitle.weight(.medium))
