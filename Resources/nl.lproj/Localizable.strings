@@ -52,6 +52,8 @@
 "action.showPassword" = "Wachtwoord tonen";
 "action.reveal" = "Ton in Finder";
 "action.retry" = "Opnieuw proberen";
+"action.pause" = "Pauzeren";
+"action.resume" = "Hervatten";
 "error.title" = "Bewerking mislukt";
 "error.unknown" = "Er is een onbekende fout opgetreden.";
 "server.removeTitle" = "Deze opgeslagen server verwijderen?";

@@ -52,6 +52,8 @@
 "action.showPassword" = "Show password";
 "action.reveal" = "Show in Finder";
 "action.retry" = "Retry";
+"action.pause" = "Jeda";
+"action.resume" = "Lanjutkan";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

@@ -52,6 +52,8 @@
 "action.showPassword" = "הצג סיסמה";
 "action.reveal" = "הצג ב־Finder";
 "action.retry" = "נסה שוב";
+"action.pause" = "השהיה";
+"action.resume" = "המשך";
 "error.title" = "הפעולה נכשלה";
 "error.unknown" = "אירעה שגיאה לא ידועה.";
 "server.removeTitle" = "להסיר את השרת השמור?";

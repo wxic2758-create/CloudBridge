@@ -76,6 +76,7 @@ final class BrowserModel {
     }
     private var activeDownloadTaskID: DownloadTask.ID?
     private var activeDownloadOperation: Task<Void, Never>?
+    private var activeDownloadControl: ProcessControl?
     private var downloadQueue: [QueuedDownload] = []
     private var privateKeyAccess: PrivateKeyAccess?
     private var activeOperation: Task<Void, Never>?
@@ -111,14 +112,14 @@ final class BrowserModel {
 
     var activeDownloadCount: Int {
         downloadTasks.reduce(into: 0) { count, task in
-            if task.status == .queued || task.status == .downloading { count += 1 }
+            if task.status == .queued || task.status == .downloading || task.status == .paused { count += 1 }
         }
     }
 
     var hasDownloadHistory: Bool {
         downloadTasks.contains { task in
             switch task.status {
-            case .queued, .downloading: false
+            case .queued, .downloading, .paused: false
             case .completed, .cancelled, .failed: true
             }
         }
@@ -365,6 +366,8 @@ final class BrowserModel {
             // all operations and control-connection cleanup have actually returned.
             await operation?.value
             await download?.value
+            finishPendingDownloads(status: .cancelled)
+            downloadQueue.removeAll()
             try? await client.disconnect()
             clearPendingConnection()
             isConnected = false
@@ -535,19 +538,25 @@ final class BrowserModel {
             }
             defer {
                 accessURL?.stopAccessingSecurityScopedResource()
-                self.downloadQueue.removeAll()
+                self.activeDownloadControl = nil
             }
 
             while !self.downloadQueue.isEmpty {
                 try Task.checkCancellation()
                 let job = self.downloadQueue.removeFirst()
                 self.activeDownloadTaskID = job.taskID
+                let processControl = ProcessControl()
+                self.activeDownloadControl = processControl
                 self.startTask(job.taskID)
                 self.downloadState = .downloading(job.item.name)
                 self.statusMessage = String(format: AppLanguage.text("status.downloadingItem"), job.item.name)
 
                 do {
-                    let destination = try await self.client.download(job.item, to: self.localDownloadDirectory) { [weak self, taskID = job.taskID] progress in
+                    let destination = try await self.client.download(
+                        job.item,
+                        to: self.localDownloadDirectory,
+                        processControl: processControl
+                    ) { [weak self, taskID = job.taskID] progress in
                         await MainActor.run {
                             guard let self, self.activeDownloadTaskID == taskID,
                                   self.activeDownloadOperation?.isCancelled == false else { return }
@@ -567,17 +576,59 @@ final class BrowserModel {
                     self.errorMessage = error.localizedDescription
                     self.statusMessage = error.localizedDescription
                 }
+                self.activeDownloadControl = nil
             }
         }
     }
 
     func cancelDownload() {
-        guard isDownloading else {
+        guard let activeDownloadTaskID,
+              let task = downloadTasks.first(where: { $0.id == activeDownloadTaskID }) else { return }
+        cancelDownload(task)
+    }
+
+    func cancelDownload(_ task: DownloadTask) {
+        guard let index = downloadTasks.firstIndex(where: { $0.id == task.id }) else { return }
+        switch downloadTasks[index].status {
+        case .queued:
+            downloadQueue.removeAll { $0.taskID == task.id }
+            downloadTasks[index].finish(status: .cancelled)
+            DownloadHistoryStore.save(downloadTasks)
+        case .downloading, .paused:
+            guard activeDownloadTaskID == task.id else { return }
+            statusMessage = AppLanguage.text("status.cancellingDownload")
+            activeDownloadOperation?.cancel()
+        case .completed, .cancelled, .failed:
             return
         }
+    }
 
-        statusMessage = AppLanguage.text("status.cancellingDownload")
-        activeDownloadOperation?.cancel()
+    func pauseDownload(_ task: DownloadTask) {
+        guard let index = downloadTasks.firstIndex(where: { $0.id == task.id }),
+              downloadTasks[index].status == .downloading,
+              activeDownloadTaskID == task.id,
+              activeDownloadControl?.pause() == true else { return }
+        downloadTasks[index].pause()
+        downloadState = .paused(task.itemName)
+        statusMessage = AppLanguage.text("action.pause")
+    }
+
+    func resumeDownload(_ task: DownloadTask) {
+        guard let index = downloadTasks.firstIndex(where: { $0.id == task.id }),
+              downloadTasks[index].status == .paused,
+              activeDownloadTaskID == task.id,
+              activeDownloadControl?.resume() == true else { return }
+        downloadTasks[index].resume()
+        downloadState = .downloading(task.itemName)
+        statusMessage = AppLanguage.text("action.resume")
+    }
+
+    func canRetry(_ task: DownloadTask) -> Bool {
+        guard canQueueDownloads, task.belongs(to: selectedServer?.id) else { return false }
+        return switch task.status {
+        case .cancelled, .failed: true
+        case .queued, .downloading, .paused, .completed: false
+        }
     }
 
     func retry(_ task: DownloadTask) {
@@ -591,13 +642,15 @@ final class BrowserModel {
             return
         }
 
+        guard canRetry(task) else { return }
+
         let item = RemoteItem(
             id: task.remotePath,
             name: task.itemName,
             path: task.remotePath,
             kind: task.isDirectory ? .directory : .file,
-            size: nil,
-            modifiedAt: nil
+            size: task.remoteSize,
+            modifiedAt: task.remoteModifiedAt
         )
         download(item)
     }
@@ -677,7 +730,7 @@ final class BrowserModel {
     func clearDownloadHistory() {
         downloadTasks.removeAll { task in
             switch task.status {
-            case .queued, .downloading: false
+            case .queued, .downloading, .paused: false
             case .completed, .cancelled, .failed: true
             }
         }
@@ -753,16 +806,24 @@ final class BrowserModel {
                 statusMessage = error.localizedDescription
                 downloadState = .failed(error.localizedDescription)
                 finishPendingDownloads(status: .failed(error.localizedDescription))
+                downloadQueue.removeAll()
             }
+            let shouldContinueQueue = isConnected && !isDisconnecting && !downloadQueue.isEmpty
             activeDownloadTaskID = nil
             activeDownloadOperation = nil
+            activeDownloadControl = nil
             isDownloading = false
+            if shouldContinueQueue { runDownloadQueue() }
         }
     }
 
     private func markActiveDownloadCancelled() {
-        finishPendingDownloads(status: .cancelled)
+        if let activeDownloadTaskID {
+            updateTask(activeDownloadTaskID, status: .cancelled)
+        }
         if case .downloading(let itemName) = downloadState {
+            downloadState = .cancelled(itemName)
+        } else if case .paused(let itemName) = downloadState {
             downloadState = .cancelled(itemName)
         }
         statusMessage = AppLanguage.text("status.downloadCancelled")
@@ -770,7 +831,7 @@ final class BrowserModel {
 
     private func finishPendingDownloads(status: DownloadTask.Status) {
         for index in downloadTasks.indices {
-            if downloadTasks[index].status == .queued || downloadTasks[index].status == .downloading {
+            if downloadTasks[index].status == .queued || downloadTasks[index].status == .downloading || downloadTasks[index].status == .paused {
                 downloadTasks[index].finish(status: status)
             }
         }

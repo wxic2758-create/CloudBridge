@@ -3,6 +3,7 @@ import Foundation
 enum DownloadState: Equatable {
     case idle
     case downloading(String)
+    case paused(String)
     case completed(String)
     case cancelled(String)
     case failed(String)
@@ -118,6 +119,7 @@ struct DownloadTask: Identifiable, Equatable, Codable {
     enum Status: Equatable, Codable {
         case queued
         case downloading
+        case paused
         case completed
         case cancelled
         case failed(String)
@@ -178,18 +180,30 @@ struct DownloadTask: Identifiable, Equatable, Codable {
         status = .downloading
     }
 
+    mutating func pause() {
+        guard status == .downloading else { return }
+        status = .paused
+        speedBytesPerSecond = nil
+        estimatedRemainingSeconds = nil
+    }
+
+    mutating func resume() {
+        guard status == .paused else { return }
+        status = .downloading
+    }
+
     mutating func finish(status: Status, destination: URL? = nil) {
-        let canFinish = self.status == .downloading ||
+        let canFinish = self.status == .downloading || self.status == .paused ||
             (self.status == .queued && (status == .cancelled || status.isFailure))
-        guard canFinish, status != .downloading, status != .queued else { return }
+        guard canFinish, status != .downloading, status != .paused, status != .queued else { return }
         self.status = status
         self.destination = destination
         speedBytesPerSecond = nil
         estimatedRemainingSeconds = nil
         if status == .completed {
             progress = 1
-            completedAt = Date()
         }
+        completedAt = Date()
     }
 
     init(
@@ -230,17 +244,24 @@ enum DownloadHistoryStore {
               let tasks = try? JSONDecoder().decode([DownloadTask].self, from: data) else {
             return []
         }
-        return tasks.filter { $0.status == .completed }
+        return tasks.filter(\.status.isTerminal)
     }
 
     static func save(_ tasks: [DownloadTask], defaults: UserDefaults = .standard) {
-        let completed = Array(tasks.filter { $0.status == .completed }.prefix(limit))
-        guard let data = try? JSONEncoder().encode(completed) else { return }
+        let history = Array(tasks.filter(\.status.isTerminal).prefix(limit))
+        guard let data = try? JSONEncoder().encode(history) else { return }
         defaults.set(data, forKey: storageKey)
     }
 }
 
 private extension DownloadTask.Status {
+    var isTerminal: Bool {
+        switch self {
+        case .completed, .cancelled, .failed: true
+        case .queued, .downloading, .paused: false
+        }
+    }
+
     var isFailure: Bool {
         if case .failed = self { return true }
         return false

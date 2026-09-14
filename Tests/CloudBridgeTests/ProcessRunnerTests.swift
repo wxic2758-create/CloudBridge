@@ -97,6 +97,51 @@ final class ProcessRunnerTests: XCTestCase {
         XCTAssertEqual(collector.data(for: .standardOutput), Data("out".utf8))
         XCTAssertEqual(collector.data(for: .standardError), Data("err".utf8))
     }
+
+    func testProcessControlPausesAndResumesRunningProcess() async throws {
+        let runner = ProcessRunner()
+        let control = ProcessControl()
+        let operation = Task {
+            try await runner.run(ProcessRequest(
+                executable: "/bin/sleep",
+                arguments: ["0.35"],
+                processControl: control
+            ))
+        }
+
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertTrue(control.pause())
+        try await Task.sleep(for: .milliseconds(450))
+        XCTAssertTrue(control.isPaused)
+        XCTAssertTrue(control.resume())
+        _ = try await operation.value
+        XCTAssertFalse(control.isAttached)
+    }
+
+    func testCancellingPausedProcessResumesItForTermination() async throws {
+        let runner = ProcessRunner()
+        let control = ProcessControl()
+        let operation = Task {
+            try await runner.run(ProcessRequest(
+                executable: "/bin/sleep",
+                arguments: ["10"],
+                processControl: control
+            ))
+        }
+
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertTrue(control.pause())
+        operation.cancel()
+
+        do {
+            _ = try await operation.value
+            XCTFail("Expected cancellation")
+        } catch let error as ProcessRunnerError {
+            XCTAssertEqual(error, .cancelled)
+        }
+        XCTAssertFalse(control.isAttached)
+        XCTAssertFalse(control.isPaused)
+    }
     func testRunDrainsLargeStandardOutputAndStandardError() async throws {
         let runner = ProcessRunner()
         let request = ProcessRequest(
@@ -695,17 +740,71 @@ final class ServerNavigationTests: XCTestCase {
         XCTAssertNil(model.selectedItemID)
     }
 
-    func testActiveDownloadCountIncludesQueuedAndDownloadingOnly() {
+    func testActiveDownloadCountIncludesQueuedDownloadingAndPaused() {
         let model = BrowserModel(initialServers: [])
         model.downloadTasks = [
             DownloadTask(itemName: "queued", remotePath: "/queued", serverName: "test", isDirectory: false, status: .queued),
             DownloadTask(itemName: "active", remotePath: "/active", serverName: "test", isDirectory: false),
+            DownloadTask(itemName: "paused", remotePath: "/paused", serverName: "test", isDirectory: false),
             DownloadTask(itemName: "done", remotePath: "/done", serverName: "test", isDirectory: false, status: .queued)
         ]
-        model.downloadTasks[2].start()
-        model.downloadTasks[2].finish(status: .completed)
+        model.downloadTasks[2].pause()
+        model.downloadTasks[3].start()
+        model.downloadTasks[3].finish(status: .completed)
 
-        XCTAssertEqual(model.activeDownloadCount, 2)
+        XCTAssertEqual(model.activeDownloadCount, 3)
+    }
+
+    func testCancellingQueuedDownloadOnlyCancelsChosenTask() {
+        let model = BrowserModel(initialServers: [])
+        let active = DownloadTask(itemName: "active", remotePath: "/active", serverName: "test", isDirectory: false)
+        let queued = DownloadTask(itemName: "queued", remotePath: "/queued", serverName: "test", isDirectory: false, status: .queued)
+        model.downloadTasks = [active, queued]
+
+        model.cancelDownload(queued)
+
+        XCTAssertEqual(model.downloadTasks[0].status, .downloading)
+        XCTAssertEqual(model.downloadTasks[1].status, .cancelled)
+    }
+
+    func testDownloadTaskCanPauseAndResumeWithoutLosingProgress() {
+        var task = DownloadTask(itemName: "archive", remotePath: "/archive", serverName: "test", isDirectory: false)
+        task.apply(DownloadProgress(bytesTransferred: 25, totalBytes: 100, speedBytesPerSecond: 10, estimatedRemainingSeconds: 7.5))
+
+        task.pause()
+        XCTAssertEqual(task.status, .paused)
+        XCTAssertEqual(task.progress, 0.25)
+        XCTAssertNil(task.speedBytesPerSecond)
+        XCTAssertNil(task.estimatedRemainingSeconds)
+
+        task.resume()
+        XCTAssertEqual(task.status, .downloading)
+        XCTAssertEqual(task.progress, 0.25)
+    }
+
+    func testRetryQueuesOnOriginalServerWhileAnotherDownloadIsActive() {
+        let server = SavedServer(host: "example.invalid", username: "root", password: "secret")
+        var cancelled = DownloadTask(
+            itemName: "archive.zip",
+            remotePath: "/archive.zip",
+            serverName: server.displayName,
+            isDirectory: false,
+            serverID: server.id,
+            remoteSize: 128,
+            status: .downloading
+        )
+        cancelled.finish(status: .cancelled)
+        let model = BrowserModel(initialServers: [server], initialDownloadTasks: [cancelled])
+        model.isConnected = true
+        model.isDownloading = true
+
+        XCTAssertTrue(model.canRetry(cancelled))
+        model.retry(cancelled)
+
+        XCTAssertEqual(model.downloadTasks.count, 2)
+        XCTAssertEqual(model.downloadTasks[0].status, .queued)
+        XCTAssertEqual(model.downloadTasks[0].remoteSize, 128)
+        XCTAssertEqual(model.downloadTasks[1].status, .cancelled)
     }
 
     func testClearDownloadHistoryPreservesActiveQueue() {
@@ -790,6 +889,24 @@ final class ServerNavigationTests: XCTestCase {
         let restored = DownloadHistoryStore.load(defaults: defaults)
 
         XCTAssertEqual(restored, [completed])
+    }
+
+    func testFailedAndCancelledHistoryPersistForRetry() throws {
+        let suiteName = "CloudBridgeTests.DownloadHistory.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let serverID = UUID()
+        var failed = DownloadTask(itemName: "failed.zip", remotePath: "/failed.zip", serverName: "server", isDirectory: false, serverID: serverID)
+        failed.finish(status: .failed("offline"))
+        var cancelled = DownloadTask(itemName: "cancelled.zip", remotePath: "/cancelled.zip", serverName: "server", isDirectory: false, serverID: serverID)
+        cancelled.finish(status: .cancelled)
+        let paused = DownloadTask(itemName: "paused.zip", remotePath: "/paused.zip", serverName: "server", isDirectory: false, serverID: serverID, status: .paused)
+
+        DownloadHistoryStore.save([failed, cancelled, paused], defaults: defaults)
+        let restored = DownloadHistoryStore.load(defaults: defaults)
+
+        XCTAssertEqual(restored.map(\.status), [.failed("offline"), .cancelled])
+        XCTAssertEqual(restored.compactMap(\.completedAt).count, 2)
     }
 
     func testCompletedServerHistoryDoesNotBlockAnotherDownload() {

@@ -52,6 +52,8 @@
 "action.showPassword" = "إظهار كلمة المرور";
 "action.reveal" = "إظهار في المستكشف";
 "action.retry" = "إعادة المحاولة";
+"action.pause" = "إيقاف مؤقت";
+"action.resume" = "استئناف";
 "error.title" = "فشل التشغيل";
 "error.unknown" = "حدث خطأ غير معروف.";
 "server.removeTitle" = "إزالة هذا الخادم المحفوظ؟";

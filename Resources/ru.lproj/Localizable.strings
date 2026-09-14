@@ -52,6 +52,8 @@
 "action.showPassword" = "Показать пароль";
 "action.reveal" = "Показать в Finder";
 "action.retry" = "Повторить";
+"action.pause" = "Приостановить";
+"action.resume" = "Продолжить";
 "error.title" = "Операция не выполнена";
 "error.unknown" = "Произошла неизвестная ошибка.";
 "server.removeTitle" = "Удалить этот сохранённый сервер?";

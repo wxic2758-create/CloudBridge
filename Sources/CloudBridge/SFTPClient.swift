@@ -93,6 +93,7 @@ actor SFTPClient {
         _ item: RemoteItem,
         to localDirectory: URL,
         conflictStrategy: DownloadConflictStrategy = .rename,
+        processControl: ProcessControl? = nil,
         progress: (@Sendable (DownloadProgress) async -> Void)? = nil
     ) async throws -> URL {
         try Task.checkCancellation()
@@ -124,12 +125,12 @@ actor SFTPClient {
             switch mode {
             case .sftp:
                 if item.isDirectory {
-                    try await self.runSFTPDirectoryDownload(remotePath: item.path, localPath: stagedFile.path)
+                    try await self.runSFTPDirectoryDownload(remotePath: item.path, localPath: stagedFile.path, processControl: processControl)
                 } else {
-                    try await self.runSFTPFileDownload(remotePath: item.path, localPath: stagedFile.path)
+                    try await self.runSFTPFileDownload(remotePath: item.path, localPath: stagedFile.path, processControl: processControl)
                 }
             case .legacySSH:
-                try await self.runLegacySCPDownload(remotePath: item.path, localPath: stagedFile.path, recursively: item.isDirectory)
+                try await self.runLegacySCPDownload(remotePath: item.path, localPath: stagedFile.path, recursively: item.isDirectory, processControl: processControl)
             }
         }
         if item.isDirectory {
@@ -207,17 +208,19 @@ actor SFTPClient {
         return directory.appending(path: "\(baseName) \(UUID().uuidString)")
     }
 
-    private func runSFTPFileDownload(remotePath: String, localPath: String) async throws {
+    private func runSFTPFileDownload(remotePath: String, localPath: String, processControl: ProcessControl? = nil) async throws {
         _ = try await runSFTPCommands(
             ["get -p \(sftpQuote(remotePath)) \(sftpQuote(localPath))", "bye"],
-            capturesOutput: false
+            capturesOutput: false,
+            processControl: processControl
         )
     }
 
-    private func runSFTPDirectoryDownload(remotePath: String, localPath: String) async throws {
+    private func runSFTPDirectoryDownload(remotePath: String, localPath: String, processControl: ProcessControl? = nil) async throws {
         _ = try await runSFTPCommands(
             ["get -pR \(sftpQuote(remotePath)) \(sftpQuote(localPath))", "bye"],
-            capturesOutput: false
+            capturesOutput: false,
+            processControl: processControl
         )
     }
 
@@ -243,7 +246,8 @@ actor SFTPClient {
     private func runLegacySCPDownload(
         remotePath: String,
         localPath: String,
-        recursively: Bool
+        recursively: Bool,
+        processControl: ProcessControl? = nil
     ) async throws {
         guard let profile else {
             throw SFTPClientError.missingConnectionDetails
@@ -261,18 +265,24 @@ actor SFTPClient {
                 executable: "/usr/bin/scp",
                 arguments: arguments,
                 password: profile.password,
-                capturesOutput: false
+                capturesOutput: false,
+                processControl: processControl
             )
         } else {
             _ = try await runProcess(
                 executable: "/usr/bin/scp",
                 arguments: arguments,
-                capturesOutput: false
+                capturesOutput: false,
+                processControl: processControl
             )
         }
     }
 
-    private func runSFTPCommands(_ commands: [String], capturesOutput: Bool) async throws -> String {
+    private func runSFTPCommands(
+        _ commands: [String],
+        capturesOutput: Bool,
+        processControl: ProcessControl? = nil
+    ) async throws -> String {
         guard let profile else {
             throw SFTPClientError.missingConnectionDetails
         }
@@ -288,7 +298,8 @@ actor SFTPClient {
                 password: profile.password,
                 capturesOutput: capturesOutput,
                 standardInputData: input,
-                includeStandardErrorInSuccessfulOutput: true
+                includeStandardErrorInSuccessfulOutput: true,
+                processControl: processControl
             )
             try Self.throwIfSFTPReportedError(in: output)
             return output
@@ -299,7 +310,8 @@ actor SFTPClient {
             arguments: arguments,
             capturesOutput: capturesOutput,
             standardInputData: input,
-            includeStandardErrorInSuccessfulOutput: true
+            includeStandardErrorInSuccessfulOutput: true,
+            processControl: processControl
         )
         try Self.throwIfSFTPReportedError(in: output)
         return output
@@ -312,7 +324,8 @@ actor SFTPClient {
         standardInputData: Data? = nil,
         environment: [String: String]? = nil,
         includeStandardErrorInSuccessfulOutput: Bool = false,
-        timeout: Duration? = nil
+        timeout: Duration? = nil,
+        processControl: ProcessControl? = nil
     ) async throws -> String {
         do {
             return try await processRunner.run(
@@ -324,7 +337,8 @@ actor SFTPClient {
                     environment: environment,
                     includeStandardErrorInSuccessfulOutput: includeStandardErrorInSuccessfulOutput,
                     currentDirectoryURL: Self.connectionCacheURL(),
-                    timeout: timeout
+                    timeout: timeout,
+                    processControl: processControl
                 )
             )
         } catch let error as ProcessRunnerError {
@@ -341,7 +355,8 @@ actor SFTPClient {
         password: String,
         capturesOutput: Bool = true,
         standardInputData: Data? = nil,
-        includeStandardErrorInSuccessfulOutput: Bool = false
+        includeStandardErrorInSuccessfulOutput: Bool = false,
+        processControl: ProcessControl? = nil
     ) async throws -> String {
         let environment = try makeAskpassEnvironment(password: password)
         return try await runProcess(
@@ -350,7 +365,8 @@ actor SFTPClient {
             capturesOutput: capturesOutput,
             standardInputData: standardInputData,
             environment: environment,
-            includeStandardErrorInSuccessfulOutput: includeStandardErrorInSuccessfulOutput
+            includeStandardErrorInSuccessfulOutput: includeStandardErrorInSuccessfulOutput,
+            processControl: processControl
         )
     }
 

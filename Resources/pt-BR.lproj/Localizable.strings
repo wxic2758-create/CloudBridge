@@ -52,6 +52,8 @@
 "action.showPassword" = "Mostrar senha";
 "action.reveal" = "Mostrar no Finder";
 "action.retry" = "Tentar novamente";
+"action.pause" = "Pausar";
+"action.resume" = "Retomar";
 "error.title" = "Falha na operação";
 "error.unknown" = "Ocorreu um erro desconhecido.";
 "server.removeTitle" = "Remover este servidor salvo?";

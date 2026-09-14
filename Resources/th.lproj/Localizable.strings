@@ -52,6 +52,8 @@
 "action.showPassword" = "Show password";
 "action.reveal" = "Show in Finder";
 "action.retry" = "Retry";
+"action.pause" = "หยุดชั่วคราว";
+"action.resume" = "ดำเนินการต่อ";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

@@ -52,6 +52,8 @@
 "action.showPassword" = "Passwort anzeigen";
 "action.reveal" = "In Finder zeigen";
 "action.retry" = "Wiederholen";
+"action.pause" = "Pausieren";
+"action.resume" = "Fortsetzen";
 "error.title" = "Vorgang fehlgeschlagen";
 "error.unknown" = "Ein unbekannter Fehler ist aufgetreten.";
 "server.removeTitle" = "Gespeicherten Server entfernen?";

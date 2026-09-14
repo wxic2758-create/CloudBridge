@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 enum ProcessOutputStream: Sendable, Equatable {
     case standardOutput
@@ -14,6 +15,7 @@ struct ProcessRequest: Sendable {
     let includeStandardErrorInSuccessfulOutput: Bool
     let currentDirectoryURL: URL?
     let timeout: Duration?
+    let processControl: ProcessControl?
     // Raw chunks, not lines or terminal output. Callbacks from the two streams
     // may overlap; successful completion waits for EOF and all callbacks.
     // With capturesOutput == false, stdout is discarded (stderr is still read).
@@ -28,6 +30,7 @@ struct ProcessRequest: Sendable {
         includeStandardErrorInSuccessfulOutput: Bool = false,
         currentDirectoryURL: URL? = nil,
         timeout: Duration? = nil,
+        processControl: ProcessControl? = nil,
         outputHandler: (@Sendable (Data, ProcessOutputStream) -> Void)? = nil
     ) {
         self.executable = executable
@@ -38,7 +41,57 @@ struct ProcessRequest: Sendable {
         self.includeStandardErrorInSuccessfulOutput = includeStandardErrorInSuccessfulOutput
         self.currentDirectoryURL = currentDirectoryURL
         self.timeout = timeout
+        self.processControl = processControl
         self.outputHandler = outputHandler
+    }
+}
+
+final class ProcessControl: @unchecked Sendable {
+    private let lock = NSLock()
+    private var process: Process?
+    private var pauseRequested = false
+
+    var isPaused: Bool {
+        lock.withLock { pauseRequested && process?.isRunning == true }
+    }
+
+    var isAttached: Bool {
+        lock.withLock { process != nil }
+    }
+
+    @discardableResult
+    func pause() -> Bool {
+        lock.withLock {
+            pauseRequested = true
+            guard let process, process.isRunning else { return true }
+            return kill(process.processIdentifier, SIGSTOP) == 0
+        }
+    }
+
+    @discardableResult
+    func resume() -> Bool {
+        lock.withLock {
+            pauseRequested = false
+            guard let process, process.isRunning else { return true }
+            return kill(process.processIdentifier, SIGCONT) == 0
+        }
+    }
+
+    fileprivate func attach(_ process: Process) {
+        lock.withLock {
+            self.process = process
+            if pauseRequested, process.isRunning {
+                _ = kill(process.processIdentifier, SIGSTOP)
+            }
+        }
+    }
+
+    fileprivate func detach(_ process: Process?) {
+        lock.withLock {
+            guard self.process === process else { return }
+            self.process = nil
+            pauseRequested = false
+        }
     }
 }
 
@@ -174,6 +227,7 @@ private final class ProcessExecution: @unchecked Sendable {
         self.process = process
         do {
             try process.run()
+            request.processControl?.attach(process)
             lock.unlock()
             if request.capturesOutput {
                 drain(stdoutPipe.fileHandleForReading, into: stdoutBuffer, stream: .standardOutput, group: readers)
@@ -238,6 +292,7 @@ private final class ProcessExecution: @unchecked Sendable {
         lock.unlock()
 
         if let process, process.isRunning {
+            _ = request.processControl?.resume()
             process.terminate()
         } else {
             finish(error: error)
@@ -271,6 +326,7 @@ private final class ProcessExecution: @unchecked Sendable {
         }
 
         timeoutTask?.cancel()
+        request.processControl?.detach(process)
         if let stdoutPipe {
             try? stdoutPipe.fileHandleForReading.close()
         }

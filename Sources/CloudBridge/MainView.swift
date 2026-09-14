@@ -524,7 +524,7 @@ struct MainView: View {
             }
             Spacer(minLength: 16)
             switch task.status {
-            case .queued, .downloading:
+            case .queued:
                 Text(downloadProgressText(task))
                     .font(.body.weight(.semibold))
                     .monospacedDigit()
@@ -532,7 +532,35 @@ struct MainView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(copy("tasks.progress"))
                 .accessibilityValue(downloadProgressText(task))
-                Button(action: model.cancelDownload) {
+                Button { model.cancelDownload(task) } label: {
+                    Image(systemName: "xmark.circle").frame(width: 28, height: 28)
+                }
+                .buttonStyle(.borderless)
+                .help(copy("action.cancel"))
+                .accessibilityLabel(copy("action.cancel"))
+            case .downloading:
+                downloadProgress(for: task)
+                Button { model.pauseDownload(task) } label: {
+                    Image(systemName: "pause.circle").frame(width: 28, height: 28)
+                }
+                .buttonStyle(.borderless)
+                .help(copy("action.pause"))
+                .accessibilityLabel(copy("action.pause"))
+                Button { model.cancelDownload(task) } label: {
+                    Image(systemName: "xmark.circle").frame(width: 28, height: 28)
+                }
+                .buttonStyle(.borderless)
+                .help(copy("action.cancel"))
+                .accessibilityLabel(copy("action.cancel"))
+            case .paused:
+                downloadProgress(for: task)
+                Button { model.resumeDownload(task) } label: {
+                    Image(systemName: "play.circle").frame(width: 28, height: 28)
+                }
+                .buttonStyle(.borderless)
+                .help(copy("action.resume"))
+                .accessibilityLabel(copy("action.resume"))
+                Button { model.cancelDownload(task) } label: {
                     Image(systemName: "xmark.circle").frame(width: 28, height: 28)
                 }
                 .buttonStyle(.borderless)
@@ -558,8 +586,9 @@ struct MainView: View {
                 Button { model.retry(task) } label: {
                     Image(systemName: "arrow.clockwise").frame(width: 28, height: 28)
                 }
-                    .disabled(!model.canQueueDownloads || !task.belongs(to: model.selectedServerID))
-                    .help(copy("tasks.retryHelp"))
+                    .buttonStyle(.borderless)
+                    .disabled(!model.canRetry(task))
+                    .help(copy("action.retry"))
                     .accessibilityLabel(copy("action.retry"))
             case .failed(let error):
                 Image(systemName: "exclamationmark.triangle")
@@ -569,8 +598,9 @@ struct MainView: View {
                 Button { model.retry(task) } label: {
                     Image(systemName: "arrow.clockwise").frame(width: 28, height: 28)
                 }
-                    .disabled(!model.canQueueDownloads || !task.belongs(to: model.selectedServerID))
-                    .help(copy("tasks.retryHelp"))
+                    .buttonStyle(.borderless)
+                    .disabled(!model.canRetry(task))
+                    .help(copy("action.retry"))
                     .accessibilityLabel(copy("action.retry"))
             }
         }
@@ -581,6 +611,16 @@ struct MainView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(Finish.divider.opacity(0.8))
         }
+    }
+
+    private func downloadProgress(for task: DownloadTask) -> some View {
+        Text(downloadProgressText(task))
+            .font(.body.weight(.semibold))
+            .monospacedDigit()
+            .frame(width: 52, alignment: .trailing)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(copy("tasks.progress"))
+            .accessibilityValue(downloadProgressText(task))
     }
 
     private func downloadProgressText(_ task: DownloadTask) -> String {

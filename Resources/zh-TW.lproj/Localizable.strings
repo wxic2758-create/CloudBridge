@@ -52,6 +52,8 @@
 "action.showPassword" = "顯示密碼";
 "action.reveal" = "在 Finder 中顯示";
 "action.retry" = "重試";
+"action.pause" = "暫停";
+"action.resume" = "繼續";
 "error.title" = "操作未完成";
 "error.unknown" = "發生未知錯誤。";
 "server.removeTitle" = "移除此伺服器？";

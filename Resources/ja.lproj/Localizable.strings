@@ -52,6 +52,8 @@
 "action.showPassword" = "パスワードを表示";
 "action.reveal" = "Finderで表示";
 "action.retry" = "再試行";
+"action.pause" = "一時停止";
+"action.resume" = "再開";
 "error.title" = "操作に失敗しました";
 "error.unknown" = "不明なエラーが発生しました。";
 "server.removeTitle" = "この保存されたサーバーを削除しますか？";
