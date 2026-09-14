@@ -188,12 +188,11 @@ struct MainView: View {
                 ].enumerated()), id: \.offset) { _, entry in
                     let (destination, key) = entry
                     Button { section = destination } label: {
-                        ZStack {
-                            Text(copy(key))
-                                .font(.system(size: 13, weight: .medium))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
+                        Group {
                             if destination == .downloads {
+                                HStack(spacing: 4) {
+                                    Text(copy(key))
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
                                 Text("\(min(model.activeDownloadCount, 99))")
                                     .font(.caption2.weight(.semibold))
                                     .monospacedDigit()
@@ -202,10 +201,15 @@ struct MainView: View {
                                     .background(Finish.lilac.opacity(0.14), in: Capsule())
                                     .opacity(model.activeDownloadCount > 0 ? 1 : 0)
                                     .accessibilityHidden(model.activeDownloadCount == 0)
-                                    .frame(maxWidth: .infinity, alignment: .trailing)
-                                    .padding(.trailing, 8)
+                                }
+                                .padding(.horizontal, 8)
+                            } else {
+                                Text(copy(key))
                             }
                         }
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
                         .frame(width: 112, height: 36)
                     }
                     .buttonStyle(.plain)
