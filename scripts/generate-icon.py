@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """Generate the CloudBridge macOS app icon in all required sizes.
 
-The canonical 1024x1024 source is Assets/AppIcon-Source.png, exported from
-Ardot. This script resizes it to every size required by the macOS app icon
-asset catalog and iconset.
+The 1024x1024 source is Assets/AppIcon-Source.png, rendered from the shared
+SwiftUI bridge artwork by render-brand.py. This script resizes it to every
+size required by the macOS app icon asset catalog and iconset.
 """
 
 from __future__ import annotations
+import os
 from pathlib import Path
+import subprocess
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSET_DIR = ROOT / "Assets"
 SOURCE_PNG = ASSET_DIR / "AppIcon-Source.png"
+ICON_DOCUMENT = ASSET_DIR / "IconComposer" / "CloudBridge-Purple.icon"
 ICONSET_DIR = ASSET_DIR / "CloudBridge.iconset"
 XCASSETS_DIR = ASSET_DIR / "Assets.xcassets"
 APPICON_DIR = XCASSETS_DIR / "AppIcon.appiconset"
@@ -52,11 +55,39 @@ CONTENTS_JSON = """{
 
 
 def main() -> None:
-    if not SOURCE_PNG.exists():
-        raise FileNotFoundError(
-            f"Source icon not found: {SOURCE_PNG}\n"
-            "Export a 1024x1024 PNG from Ardot to this path first."
-        )
+    if not ICON_DOCUMENT.is_dir():
+        raise FileNotFoundError(f"Icon Composer document not found: {ICON_DOCUMENT}")
+
+    # Icon Composer is the canonical renderer for the supplied .icon document.
+    # Keep the raster files checked into the project so Xcode and SwiftPM builds
+    # do not need to understand the .icon format themselves.
+    icon_tool = os.environ.get("ICTOOL")
+    if icon_tool is None:
+        developer_dir = Path(subprocess.check_output(["xcode-select", "-p"], text=True).strip())
+        icon_tool = str(developer_dir.parent / "Applications/Icon Composer.app/Contents/Executables/ictool")
+    if not Path(icon_tool).is_file():
+        raise FileNotFoundError(f"Icon Composer renderer not found: {icon_tool}")
+    SOURCE_PNG.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [
+            icon_tool,
+            str(ICON_DOCUMENT),
+            "--export-image",
+            "--output-file",
+            str(SOURCE_PNG),
+            "--platform",
+            "macOS",
+            "--rendition",
+            "Default",
+            "--width",
+            "1024",
+            "--height",
+            "1024",
+            "--scale",
+            "1",
+        ],
+        check=True,
+    )
 
     ICONSET_DIR.mkdir(parents=True, exist_ok=True)
     APPICON_DIR.mkdir(parents=True, exist_ok=True)

@@ -14,6 +14,9 @@ struct ProcessRequest: Sendable {
     let includeStandardErrorInSuccessfulOutput: Bool
     let currentDirectoryURL: URL?
     let timeout: Duration?
+    // Raw chunks, not lines or terminal output. Callbacks from the two streams
+    // may overlap; successful completion waits for EOF and all callbacks.
+    // With capturesOutput == false, stdout is discarded (stderr is still read).
     let outputHandler: (@Sendable (Data, ProcessOutputStream) -> Void)?
 
     init(
@@ -51,11 +54,11 @@ enum ProcessRunnerError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .cancelled:
-            "The server command was cancelled."
+            AppLanguage.text("error.serverCommandCancelled")
         case .timedOut:
-            "The server command timed out."
+            AppLanguage.text("error.serverCommandTimedOut")
         case let .failed(message):
-            message.isEmpty ? "The process failed." : message
+            message.isEmpty ? AppLanguage.text("error.processFailed") : message
         }
     }
 }
@@ -144,38 +147,38 @@ private final class ProcessExecution: @unchecked Sendable {
             process.environment = environment
         }
 
-        let outputHandler = request.outputHandler
-        if request.capturesOutput {
-            stdoutPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-                let data = handle.availableData
-                guard data.isEmpty == false else { handle.readabilityHandler = nil; return }
-                self?.stdoutBuffer.append(data)
-                outputHandler?(data, .standardOutput)
-            }
-        }
-        stderrPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
-            guard data.isEmpty == false else { handle.readabilityHandler = nil; return }
-            self?.stderrBuffer.append(data)
-            outputHandler?(data, .standardError)
-        }
-
-        lock.lock()
-        self.process = process
-        lock.unlock()
+        // Drain each pipe on one reader, and do not finish until both reach EOF.
+        // Process termination alone does not mean its last output was consumed.
+        let readers = DispatchGroup()
+        if request.capturesOutput { readers.enter() }
+        readers.enter()
 
         process.terminationHandler = { [weak self] process in
-            Task.detached {
+            let status = process.terminationStatus
+            readers.notify(queue: .global(qos: .utility)) { [weak self] in
                 self?.finish(
-                    terminationStatus: process.terminationStatus,
+                    terminationStatus: status,
                     stdout: self?.stdoutBuffer.data ?? Data(),
                     stderr: self?.stderrBuffer.data ?? Data()
                 )
             }
         }
 
+        // Serialize launch with cancellation. Never resume the awaiting owner
+        // before a process that is about to launch has actually terminated.
+        lock.lock()
+        guard !didFinish else {
+            lock.unlock()
+            return
+        }
+        self.process = process
         do {
             try process.run()
+            lock.unlock()
+            if request.capturesOutput {
+                drain(stdoutPipe.fileHandleForReading, into: stdoutBuffer, stream: .standardOutput, group: readers)
+            }
+            drain(stderrPipe.fileHandleForReading, into: stderrBuffer, stream: .standardError, group: readers)
             lock.lock()
             let shouldTerminate = didFinish
             lock.unlock()
@@ -185,7 +188,7 @@ private final class ProcessExecution: @unchecked Sendable {
             }
             if let standardInputData = request.standardInputData {
                 stdinPipe.fileHandleForWriting.write(standardInputData)
-                try stdinPipe.fileHandleForWriting.close()
+                try? stdinPipe.fileHandleForWriting.close()
             }
             if let timeout = request.timeout {
                 timeoutTask = Task.detached { [weak self] in
@@ -198,7 +201,29 @@ private final class ProcessExecution: @unchecked Sendable {
                 }
             }
         } catch {
+            lock.unlock()
             finish(error: error, stdoutPipe: stdoutPipe, stderrPipe: stderrPipe)
+        }
+    }
+
+    private func drain(
+        _ handle: FileHandle,
+        into buffer: OutputBuffer,
+        stream: ProcessOutputStream,
+        group: DispatchGroup
+    ) {
+        let outputHandler = request.outputHandler
+        DispatchQueue.global(qos: .utility).async {
+            defer {
+                try? handle.close()
+                group.leave()
+            }
+            while true {
+                let data = handle.availableData
+                guard !data.isEmpty else { return }
+                buffer.append(data)
+                outputHandler?(data, stream)
+            }
         }
     }
 
@@ -243,13 +268,6 @@ private final class ProcessExecution: @unchecked Sendable {
 
         guard shouldResume else {
             return
-        }
-
-        if stdout.isEmpty == false {
-            request.outputHandler?(stdout, .standardOutput)
-        }
-        if stderr.isEmpty == false {
-            request.outputHandler?(stderr, .standardError)
         }
 
         timeoutTask?.cancel()

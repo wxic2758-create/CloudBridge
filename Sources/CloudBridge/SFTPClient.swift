@@ -8,37 +8,11 @@ enum SFTPClientError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingConnectionDetails:
-            "Enter a server address and username."
+            AppLanguage.text("error.missingConnectionDetails")
         case .invalidLocalDirectory:
-            "Choose a valid local download folder."
+            AppLanguage.text("error.invalidLocalDirectory")
         case .processFailed(let message):
-            message.isEmpty ? "The server command failed." : message
-        }
-    }
-}
-
-struct HostKeyIdentity: Identifiable, Equatable, Sendable {
-    let keyType: String
-    let fingerprint: String
-    let knownHostsLine: String
-
-    var id: String { fingerprint }
-
-    var confirmationDescription: String {
-        "首次连接到此服务器。请确认主机指纹：\n\(keyType)  \(fingerprint)"
-    }
-}
-
-enum HostKeyTrustError: LocalizedError {
-    case confirmationRequired(HostKeyIdentity)
-    case changed(expected: String, actual: HostKeyIdentity)
-
-    var errorDescription: String? {
-        switch self {
-        case .confirmationRequired:
-            return nil
-        case let .changed(expected, actual):
-            return "服务器主机指纹已变化。已保存：\(expected)；当前：\(actual.fingerprint)。为保护连接，CloudBridge 已阻止此次连接。"
+            message.isEmpty ? AppLanguage.text("error.serverCommandFailed") : message
         }
     }
 }
@@ -54,23 +28,25 @@ actor SFTPClient {
 
     private var profile: ServerProfile?
     private var transferMode = TransferMode.sftp
+    private var directoryCache: [String: [RemoteItem]] = [:]
     private let processRunner: any ProcessRunning
 
-    init(processRunner: any ProcessRunning = ProcessRunner()) {
+    init(profile: ServerProfile? = nil, processRunner: any ProcessRunning = ProcessRunner()) {
+        self.profile = profile
         self.processRunner = processRunner
     }
 
-    func connect(profile: ServerProfile, approvedFingerprint: String? = nil) async throws {
+    func connect(profile: ServerProfile) async throws {
         guard profile.host.isEmpty == false,
               profile.username.isEmpty == false else {
             throw SFTPClientError.missingConnectionDetails
         }
 
-        let hostKey = try await verifyHostKey(for: profile, approvedFingerprint: approvedFingerprint)
-        try Self.storeHostKey(hostKey.knownHostsLine)
         self.profile = profile
         transferMode = .sftp
-        await startControlConnection(for: profile)
+        directoryCache.removeAll()
+        try await startControlConnection(for: profile)
+        try Task.checkCancellation()
     }
 
     func disconnect() async throws {
@@ -79,17 +55,23 @@ actor SFTPClient {
         }
         profile = nil
         transferMode = .sftp
+        directoryCache.removeAll()
     }
 
-    func listDirectory(_ path: String) async throws -> [RemoteItem] {
+    func listDirectory(_ path: String, useCache: Bool = true) async throws -> [RemoteItem] {
+        if useCache, let cached = directoryCache[path] {
+            return cached
+        }
+
+        let items: [RemoteItem]
         switch transferMode {
         case .sftp:
             do {
                 let output = try await runSFTPCommands(
-                    ["ls -l \(sftpQuote(path))", "bye"],
+                    ["ls -lan \(sftpQuote(path))", "bye"],
                     capturesOutput: true
                 )
-                return parseSFTPDirectoryList(output, currentPath: path)
+                items = parseSFTPDirectoryList(output, currentPath: path)
             } catch {
                 guard Self.shouldFallbackToLegacySSH(for: error) else {
                     throw error
@@ -97,45 +79,76 @@ actor SFTPClient {
 
                 let output = try await runLegacySSH(command: legacyDirectoryListCommand(for: path))
                 transferMode = .legacySSH
-                return parseDirectoryList(output, currentPath: path)
+                items = parseDirectoryList(output, currentPath: path)
             }
         case .legacySSH:
             let output = try await runLegacySSH(command: legacyDirectoryListCommand(for: path))
-            return parseDirectoryList(output, currentPath: path)
+            items = parseDirectoryList(output, currentPath: path)
         }
+        directoryCache[path] = items
+        return items
     }
 
-    func download(_ item: RemoteItem, to localDirectory: URL, conflictStrategy: DownloadConflictStrategy = .rename) async throws -> URL {
+    func download(
+        _ item: RemoteItem,
+        to localDirectory: URL,
+        conflictStrategy: DownloadConflictStrategy = .rename,
+        progress: (@Sendable (DownloadProgress) async -> Void)? = nil
+    ) async throws -> URL {
+        try Task.checkCancellation()
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: localDirectory.path, isDirectory: &isDirectory),
               isDirectory.boolValue else {
             throw SFTPClientError.invalidLocalDirectory
         }
-
-        let requested = localDirectory.appending(path: item.name)
+        // Remote names must not escape the chosen directory or inject batch commands.
+        guard !item.name.isEmpty, item.name != ".", item.name != "..",
+              !item.name.contains("/"), !item.name.contains("\0"),
+              !item.path.contains("\n"), !item.path.contains("\r"), !item.path.contains("\0") else {
+            throw SFTPClientError.processFailed("The remote filename cannot be downloaded safely.")
+        }
+        let requested = localDirectory.appending(path: item.localDownloadName)
         if conflictStrategy == .skip, FileManager.default.fileExists(atPath: requested.path) {
-            return requested
+            return requested // No progress or transferred bytes for a skipped item.
         }
-        if conflictStrategy == .replace, FileManager.default.fileExists(atPath: requested.path) {
-            try FileManager.default.removeItem(at: requested)
-        }
-        let destination = conflictStrategy == .rename ? uniqueDestinationURL(for: item.name, in: localDirectory) : requested
 
-        switch transferMode {
-        case .sftp:
-            if item.isDirectory {
-                try await runSFTPDirectoryDownload(remotePath: item.path, localPath: destination.path)
-            } else {
-                try await runSFTPFileDownload(remotePath: item.path, localPath: destination.path)
+        // Stage on the same volume. Existing files never contaminate the measured size,
+        // concurrent downloads cannot share a target, and failed replacements preserve originals.
+        let staging = localDirectory.appending(path: ".cloudbridge-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: false,
+                                               attributes: [.posixPermissions: 0o700])
+        defer { try? FileManager.default.removeItem(at: staging) }
+        let stagedFile = staging.appending(path: "payload")
+        let mode = transferMode
+        let transfer = {
+            switch mode {
+            case .sftp:
+                if item.isDirectory {
+                    try await self.runSFTPDirectoryDownload(remotePath: item.path, localPath: stagedFile.path)
+                } else {
+                    try await self.runSFTPFileDownload(remotePath: item.path, localPath: stagedFile.path)
+                }
+            case .legacySSH:
+                try await self.runLegacySCPDownload(remotePath: item.path, localPath: stagedFile.path, recursively: item.isDirectory)
             }
-        case .legacySSH:
-            try await runLegacySCPDownload(
-                remotePath: item.path,
-                localPath: destination.path,
-                recursively: item.isDirectory
-            )
         }
-
+        if item.isDirectory {
+            // Directory inode sizes are not transferred contents. No recursive scans or fake total.
+            try await transfer()
+        } else {
+            try await DownloadProgressSampler.monitor(file: stagedFile,
+                totalBytes: item.kind == .file ? item.size : nil, progress: progress, operation: transfer)
+        }
+        try Task.checkCancellation()
+        let destination = conflictStrategy == .rename ? uniqueDestinationURL(for: item.localDownloadName, in: localDirectory) : requested
+        if FileManager.default.fileExists(atPath: destination.path) {
+            if conflictStrategy == .skip { return destination }
+            if conflictStrategy == .replace {
+                _ = try FileManager.default.replaceItemAt(destination, withItemAt: stagedFile)
+                return destination
+            }
+        }
+        try FileManager.default.moveItem(at: stagedFile, to: destination)
         return destination
     }
 
@@ -149,6 +162,8 @@ actor SFTPClient {
             withIntermediateDirectories: true
         )
 
+        var completed = false
+        defer { if !completed { try? FileManager.default.removeItem(at: previewDirectory) } }
         let destination = previewDirectory.appending(path: item.name)
         switch transferMode {
         case .sftp:
@@ -160,6 +175,8 @@ actor SFTPClient {
                 recursively: false
             )
         }
+        try Task.checkCancellation()
+        completed = true
         return destination
     }
 
@@ -341,16 +358,20 @@ actor SFTPClient {
         var arguments = [
             "-q",
             "-P", "\(profile.port)",
-            "-o", "StrictHostKeyChecking=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
             "-o", "UserKnownHostsFile=\(Self.knownHostsPath())",
             "-o", "ConnectTimeout=30",
             "-o", "ControlMaster=auto",
-            "-o", "ControlPersist=60",
+            "-o", "ControlPersist=600",
             "-o", "ControlPath=\(Self.controlPath())"
         ]
 
         if let privateKeyPath = profile.privateKeyPath, privateKeyPath.isEmpty == false {
-            arguments.append(contentsOf: ["-i", privateKeyPath])
+            arguments.append(contentsOf: ["-i", privateKeyPath,
+                                          "-o", "IdentitiesOnly=yes",
+                                          "-o", "PreferredAuthentications=publickey",
+                                          "-o", "PasswordAuthentication=no",
+                                          "-o", "KbdInteractiveAuthentication=no"])
         }
 
         if profile.password.isEmpty == false {
@@ -384,16 +405,20 @@ actor SFTPClient {
     private func connectionArguments(for profile: ServerProfile, portFlag: String) -> [String] {
         var arguments = [
             portFlag, "\(profile.port)",
-            "-o", "StrictHostKeyChecking=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
             "-o", "UserKnownHostsFile=\(Self.knownHostsPath())",
             "-o", "ConnectTimeout=30",
             "-o", "ControlMaster=auto",
-            "-o", "ControlPersist=60",
+            "-o", "ControlPersist=600",
             "-o", "ControlPath=\(Self.controlPath())"
         ]
 
         if let privateKeyPath = profile.privateKeyPath, privateKeyPath.isEmpty == false {
-            arguments.append(contentsOf: ["-i", privateKeyPath])
+            arguments.append(contentsOf: ["-i", privateKeyPath,
+                                          "-o", "IdentitiesOnly=yes",
+                                          "-o", "PreferredAuthentications=publickey",
+                                          "-o", "PasswordAuthentication=no",
+                                          "-o", "KbdInteractiveAuthentication=no"])
         }
 
         if profile.password.isEmpty == false {
@@ -416,30 +441,37 @@ actor SFTPClient {
                 "-p", "\(profile.port)",
                 "\(profile.username)@\(profile.host)"
             ],
-            capturesOutput: false
+            capturesOutput: false,
+            timeout: .seconds(10)
         )
     }
 
-    private func startControlConnection(for profile: ServerProfile) async {
+    func startControlConnection(for profile: ServerProfile) async throws {
         var arguments = [
             "-M", "-N", "-f",
             "-p", "\(profile.port)",
-            "-o", "StrictHostKeyChecking=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
             "-o", "UserKnownHostsFile=\(Self.knownHostsPath())",
             "-o", "ConnectTimeout=30",
             "-o", "ControlMaster=yes",
-            "-o", "ControlPersist=60",
+            "-o", "ControlPersist=600",
             "-o", "ControlPath=\(Self.controlPath())"
         ]
 
         if let privateKeyPath = profile.privateKeyPath, privateKeyPath.isEmpty == false {
-            arguments.append(contentsOf: ["-i", privateKeyPath])
+            arguments.append(contentsOf: ["-i", privateKeyPath,
+                                          "-o", "IdentitiesOnly=yes",
+                                          "-o", "PreferredAuthentications=publickey",
+                                          "-o", "PasswordAuthentication=no",
+                                          "-o", "KbdInteractiveAuthentication=no"])
         }
 
         if profile.password.isEmpty == false {
-            arguments.append(contentsOf: Self.passwordAuthenticationArguments)
+            if profile.privateKeyPath?.isEmpty ?? true {
+                arguments.append(contentsOf: Self.passwordAuthenticationArguments)
+            }
             arguments.append(contentsOf: ["-o", "BatchMode=no"])
-            _ = try? await runPasswordCommand(
+            _ = try await runPasswordCommand(
                 executable: "/usr/bin/ssh",
                 arguments: arguments + ["\(profile.username)@\(profile.host)"],
                 password: profile.password,
@@ -448,15 +480,14 @@ actor SFTPClient {
         }
         else if profile.privateKeyPath?.isEmpty == false {
             arguments.append(contentsOf: ["-o", "BatchMode=no"])
-            _ = try? await runPasswordCommand(
+            _ = try await runProcess(
                 executable: "/usr/bin/ssh",
                 arguments: arguments + ["\(profile.username)@\(profile.host)"],
-                password: profile.password,
                 capturesOutput: false
             )
         } else {
             arguments.append(contentsOf: ["-o", "BatchMode=yes"])
-            _ = try? await runProcess(
+            _ = try await runProcess(
                 executable: "/usr/bin/ssh",
                 arguments: arguments + ["\(profile.username)@\(profile.host)"],
                 capturesOutput: false
@@ -517,24 +548,24 @@ actor SFTPClient {
         let joined = lines.joined(separator: "\n")
 
         if joined.contains("No such file or directory") {
-            return "Remote path not found. Go up one level, refresh, or reconnect from the home folder."
+            return AppLanguage.text("error.remotePathNotFound")
         }
 
         if joined.localizedCaseInsensitiveContains("Permission denied (") ||
            joined.localizedCaseInsensitiveContains("Permission denied, please try again") ||
            joined.localizedCaseInsensitiveContains("authentication failed") {
-            return "The server rejected the sign-in. Check the SSH username and password, or confirm that password login is enabled on the server."
+            return AppLanguage.text("error.authenticationRejected")
         }
 
         if joined.localizedCaseInsensitiveContains("Permission denied") {
-            return "Signed in, but the selected remote path cannot be accessed. Use . for the home folder or choose a permitted path."
+            return AppLanguage.text("error.remotePathDenied")
         }
 
         if joined.contains("timed out") || joined.contains("timeout") {
-            return "Connection timed out. Check the server IP, port, and network."
+            return AppLanguage.text("error.connectionTimedOut")
         }
 
-        return joined.isEmpty ? "The server command failed." : joined
+        return joined.isEmpty ? AppLanguage.text("error.serverCommandFailed") : joined
     }
 
     private static func throwIfSFTPReportedError(in output: String) throws {
@@ -600,9 +631,7 @@ actor SFTPClient {
     }
 
     private func parseSFTPLine(_ line: String, currentPath: String) -> RemoteItem? {
-        let pattern = "^([bcdlps-])\\S*\\s+.*?\\s+(\\d+)\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+(?:\\d{2}:\\d{2}|\\d{4})\\s+(.+)$"
-        guard let expression = try? NSRegularExpression(pattern: pattern),
-              let match = expression.firstMatch(
+        guard let match = Self.sftpListingExpression.firstMatch(
                 in: line,
                 range: NSRange(line.startIndex..., in: line)
               ),
@@ -634,6 +663,12 @@ actor SFTPClient {
             modifiedAt: nil
         )
     }
+
+    private static let sftpListingExpression = try! NSRegularExpression(
+        // Some SFTP servers report an unknown hard-link count as "?". Month names
+        // and the link-count field are server-dependent, so only size stays numeric.
+        pattern: "^([?bcdlps-])\\S*\\s+\\S+\\s+\\S+\\s+\\S+\\s+(\\d+)\\s+\\S+\\s+\\d{1,2}\\s+\\S+\\s+(.+)$"
+    )
 
     private func parseFallbackLine(_ line: String, currentPath: String) -> RemoteItem? {
         guard isVisibleRemoteName(line),
@@ -678,7 +713,7 @@ actor SFTPClient {
         switch type {
         case "d":
             .directory
-        case "f":
+        case "f", "-":
             .file
         case "l":
             .symlink
@@ -742,125 +777,27 @@ actor SFTPClient {
         connectionCacheURL().appending(path: "known_hosts").path
     }
 
-    private func verifyHostKey(
-        for profile: ServerProfile,
-        approvedFingerprint: String?
-    ) async throws -> HostKeyIdentity {
-        let output = try await runProcess(
-            executable: "/usr/bin/ssh-keyscan",
-            arguments: ["-q", "-T", "10", "-p", "\(profile.port)", profile.host],
-            timeout: .seconds(15)
-        )
-        guard let keyLine = output
-            .split(whereSeparator: \.isNewline)
-            .map(String.init)
-            .first(where: { line in
-                let parts = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
-                return parts.count >= 3 && line.hasPrefix("#") == false
-            }) else {
-            throw SFTPClientError.processFailed("无法获取服务器主机指纹。请检查地址、端口和网络连接。")
-        }
-
-        let parts = keyLine.split(whereSeparator: { $0 == " " || $0 == "\t" })
-        let keyType = String(parts[1])
-        let fingerprint = try await fingerprint(for: keyLine)
-        let identity = HostKeyIdentity(
-            keyType: keyType,
-            fingerprint: fingerprint,
-            knownHostsLine: keyLine
-        )
-
-        if let knownFingerprint = try await knownHostFingerprint(for: profile) {
-            guard knownFingerprint == identity.fingerprint else {
-                throw HostKeyTrustError.changed(expected: knownFingerprint, actual: identity)
-            }
-            return identity
-        }
-
-        guard approvedFingerprint == identity.fingerprint else {
-            throw HostKeyTrustError.confirmationRequired(identity)
-        }
-        return identity
-    }
-
-    private func fingerprint(for knownHostsLine: String) async throws -> String {
-        let output = try await runProcess(
-            executable: "/usr/bin/ssh-keygen",
-            arguments: ["-lf", "-", "-E", "sha256"],
-            standardInputData: Data((knownHostsLine + "\n").utf8),
-            timeout: .seconds(15)
-        )
-        guard let fingerprint = output
-            .split(whereSeparator: { $0 == " " || $0 == "\t" })
-            .first(where: { $0.hasPrefix("SHA256:") }) else {
-            throw SFTPClientError.processFailed("无法解析服务器主机指纹。")
-        }
-        return String(fingerprint)
-    }
-
-    private func knownHostFingerprint(for profile: ServerProfile) async throws -> String? {
-        let path = Self.knownHostsPath()
-        guard let contents = FileManager.default.contents(atPath: path) else {
-            return nil
-        }
-
-        let endpoint = Self.knownHostsEndpoint(for: profile)
-        for line in String(decoding: contents, as: UTF8.self).split(whereSeparator: \.isNewline) {
-            let text = String(line)
-            guard text.hasPrefix("#") == false else { continue }
-            let parts = text.split(whereSeparator: { $0 == " " || $0 == "\t" })
-            guard parts.count >= 3 else { continue }
-            let hosts = parts[0].split(separator: ",").map(String.init)
-            guard hosts.contains(endpoint) else { continue }
-            return try await fingerprint(for: text)
-        }
-        return nil
-    }
-
-    private static func storeHostKey(_ line: String) throws {
-        let url = URL(filePath: knownHostsPath())
-        let existing = FileManager.default.contents(atPath: url.path) ?? Data()
-        let existingText = String(decoding: existing, as: UTF8.self)
-        guard existingText.split(whereSeparator: \.isNewline).contains(where: { String($0) == line }) == false else {
-            return
-        }
-
-        var updated = existingText
-        if updated.isEmpty == false, updated.hasSuffix("\n") == false {
-            updated.append("\n")
-        }
-        updated.append(line)
-        updated.append("\n")
-        try Data(updated.utf8).write(to: url, options: [.atomic])
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600],
-            ofItemAtPath: url.path
-        )
-    }
-
-    private static func knownHostsEndpoint(for profile: ServerProfile) -> String {
-        profile.port == 22 ? profile.host : "[\(profile.host)]:\(profile.port)"
-    }
-
     private static func controlPath() -> String {
         "ssh-%C"
     }
 
+    // Use Application Support, not Caches. Caches may be purged by macOS,
+    // which would lose OpenSSH's remembered host keys.
     private static func connectionCacheURL() -> URL {
-        let cachesURL = FileManager.default.urls(
-            for: .cachesDirectory,
+        let supportURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
             in: .userDomainMask
         )
         .first?
         .appending(path: "CloudBridge", directoryHint: .isDirectory)
-        ?? FileManager.default.temporaryDirectory.appending(path: "CloudBridge", directoryHint: .isDirectory)
+        ?? (FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory).appending(path: "CloudBridge", directoryHint: .isDirectory)
 
         try? FileManager.default.createDirectory(
-            at: cachesURL,
+            at: supportURL,
             withIntermediateDirectories: true
         )
 
-        return cachesURL
+        return supportURL
     }
 
     private func makeAskpassEnvironment(password: String) throws -> [String: String] {
@@ -878,9 +815,12 @@ actor SFTPClient {
             forResource: "ssh-askpass",
             withExtension: "sh"
         ) else {
-            throw SFTPClientError.processFailed("CloudBridge's sign-in helper is unavailable.")
+            throw SFTPClientError.processFailed(AppLanguage.text("error.signInHelperUnavailable"))
         }
 
+        guard FileManager.default.isExecutableFile(atPath: helperURL.path) else {
+            throw SFTPClientError.processFailed(AppLanguage.text("error.signInHelperUnavailable"))
+        }
         return helperURL
     }
 

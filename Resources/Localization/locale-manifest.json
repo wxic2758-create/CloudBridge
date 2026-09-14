@@ -1,6 +1,6 @@
 {
   "source": "en",
-  "locales": ["en", "sk", "pl", "sv", "he", "ms", "da", "no", "el", "ca", "cs", "ro", "zh-CN", "uk", "hr", "hu", "nl", "fi", "id", "vi", "ja", "it", "ru", "zh-TW", "ar", "hi", "de", "ko", "th", "tr", "es-ES", "es-MX", "fr-CA", "fr-FR", "pt-BR", "pt-PT"],
+  "locales": ["en", "ar", "ca", "cs", "da", "de", "el", "es-ES", "es-MX", "fi", "fr-FR", "fr-CA", "he", "hi", "hr", "hu", "id", "it", "ja", "ko", "ms", "nl", "no", "pl", "pt-BR", "pt-PT", "ro", "ru", "sk", "sv", "th", "tr", "uk", "vi", "zh-CN", "zh-TW"],
   "rtl": ["ar", "he"],
   "reviewState": "draft"
 }

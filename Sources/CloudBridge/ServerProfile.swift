@@ -1,5 +1,4 @@
 import Foundation
-import Security
 
 struct ServerProfile: Codable, Equatable {
     var host = ""
@@ -22,11 +21,14 @@ struct SavedServer: Codable, Identifiable, Equatable {
     var host: String
     var port: Int
     var username: String
+    var password: String
     var defaultRemotePath: String
     var privateKeyPath: String?
+    // Authorization metadata only; never contains the private key's contents.
+    var privateKeyBookmark: Data?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, host, port, username, defaultRemotePath, privateKeyPath
+        case id, name, host, port, username, password, defaultRemotePath, privateKeyPath, privateKeyBookmark
     }
 
     init(from decoder: Decoder) throws {
@@ -36,8 +38,11 @@ struct SavedServer: Codable, Identifiable, Equatable {
         host = try c.decode(String.self, forKey: .host)
         port = try c.decode(Int.self, forKey: .port)
         username = try c.decode(String.self, forKey: .username)
+        password = try c.decodeIfPresent(String.self, forKey: .password) ?? ""
         defaultRemotePath = try c.decode(String.self, forKey: .defaultRemotePath)
         privateKeyPath = try c.decodeIfPresent(String.self, forKey: .privateKeyPath)
+        // A damaged/legacy authorization must not make all saved servers disappear.
+        privateKeyBookmark = try? c.decodeIfPresent(Data.self, forKey: .privateKeyBookmark)
     }
 
     init(
@@ -46,16 +51,20 @@ struct SavedServer: Codable, Identifiable, Equatable {
         host: String = "",
         port: Int = 22,
         username: String = "",
+        password: String = "",
         defaultRemotePath: String = ".",
-        privateKeyPath: String? = nil
+        privateKeyPath: String? = nil,
+        privateKeyBookmark: Data? = nil
     ) {
         self.id = id
         self.name = name
         self.host = host
         self.port = port
         self.username = username
+        self.password = password
         self.defaultRemotePath = defaultRemotePath
         self.privateKeyPath = privateKeyPath
+        self.privateKeyBookmark = privateKeyBookmark
     }
 
     var displayName: String {
@@ -67,7 +76,7 @@ struct SavedServer: Codable, Identifiable, Equatable {
         "\(username)@\(host):\(port)"
     }
 
-    func preparedForConnection(password: String) -> ServerProfile {
+    func preparedForConnection() -> ServerProfile {
         ServerProfile(
             host: host,
             port: port,
@@ -76,6 +85,56 @@ struct SavedServer: Codable, Identifiable, Equatable {
             privateKeyPath: privateKeyPath
         )
             .preparedForConnection()
+    }
+}
+
+// One owner for each successful startAccessing call. BrowserModel retains this
+// lease across the trust sheet and the entire connection, including transfers.
+final class PrivateKeyAccess {
+    let url: URL
+    let bookmark: Data
+
+    static func makeBookmark(for url: URL) throws -> Data {
+        let started = url.startAccessingSecurityScopedResource()
+        defer { if started { url.stopAccessingSecurityScopedResource() } }
+        return try url.bookmarkData(
+            options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+    }
+
+    init(bookmark: Data?, path: String) throws {
+        guard let bookmark else {
+            // Legacy paths are not authorization: reselect through NSOpenPanel.
+            throw BrowserModelError.securityScopedAccessRequired(path)
+        }
+        do {
+            var stale = false
+            let url = try URL(resolvingBookmarkData: bookmark,
+                              options: [.withSecurityScope, .withoutUI],
+                              relativeTo: nil, bookmarkDataIsStale: &stale)
+            guard url.startAccessingSecurityScopedResource() else {
+                throw BrowserModelError.securityScopedAccessRequired(path)
+            }
+            do {
+                let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isReadableKey])
+                guard values.isRegularFile == true, values.isReadable == true else {
+                    throw BrowserModelError.securityScopedAccessRequired(path)
+                }
+                self.bookmark = stale ? try Self.makeBookmark(for: url) : bookmark
+                self.url = url
+            } catch {
+                url.stopAccessingSecurityScopedResource()
+                throw error
+            }
+        } catch {
+            throw BrowserModelError.securityScopedAccessRequired(path)
+        }
+    }
+
+    deinit {
+        url.stopAccessingSecurityScopedResource()
     }
 }
 
@@ -90,7 +149,7 @@ enum SavedServerStore {
         do {
             return try JSONDecoder().decode([SavedServer].self, from: data)
         } catch {
-            UserDefaults.standard.removeObject(forKey: storageKey)
+            // Preserve the original data for recovery; loading must never delete records.
             return []
         }
     }
@@ -101,69 +160,5 @@ enum SavedServerStore {
         }
 
         UserDefaults.standard.set(data, forKey: storageKey)
-    }
-}
-
-enum ServerCredentialStore {
-    private static let service = "com.dazhang.CloudBridge.server-password"
-
-    static func password(for serverID: UUID) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: serverID.uuidString,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else {
-            return nil
-        }
-        return String(data: data, encoding: .utf8)
-    }
-
-    static func save(_ password: String, for serverID: UUID) throws {
-        let account = serverID.uuidString
-        let data = Data(password.utf8)
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account
-        ]
-        let update: [String: Any] = [kSecValueData as String: data]
-        let updateStatus = SecItemUpdate(query as CFDictionary, update as CFDictionary)
-
-        if updateStatus == errSecItemNotFound {
-            var newItem = query
-            newItem[kSecValueData as String] = data
-            try check(SecItemAdd(newItem as CFDictionary, nil))
-        } else {
-            try check(updateStatus)
-        }
-    }
-
-    static func deletePassword(for serverID: UUID) throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: serverID.uuidString
-        ]
-        let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            try check(status)
-            return
-        }
-    }
-
-    private static func check(_ status: OSStatus) throws {
-        guard status == errSecSuccess else {
-            throw NSError(
-                domain: NSOSStatusErrorDomain,
-                code: Int(status),
-                userInfo: [NSLocalizedDescriptionKey: "Unable to update the saved server password."]
-            )
-        }
     }
 }

@@ -1,13 +1,27 @@
-name: Localization quality
+name: Engineering readiness
 
 on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  validate:
+  localization:
+    name: Localization
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Validate locale bundles
         run: python3 scripts/check-localization.py
+
+  macos:
+    name: macOS build and test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 16.4
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+      - name: Run release gate
+        run: scripts/release-gate.sh

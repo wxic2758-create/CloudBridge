@@ -51,7 +51,8 @@
 
     <h2>Common Questions</h2>
     <p><strong>Do I need a CloudBridge account?</strong><br>No. CloudBridge connects to servers that you provide and control.</p>
-    <p><strong>Where are passwords stored?</strong><br>Passwords are kept only for the current app session.</p>
+    <p><strong>Where are passwords stored?</strong><br>Server configurations, passwords, and any private-key passphrases entered in the password field are saved locally in the app's settings on your Mac. CloudBridge does not access macOS Keychain. Credentials are used for authentication to the SSH/SFTP server you select, not sent to the developer or CloudBridge services. Password authentication sends the password to that server through SSH; the local SSH tools also use the password field to answer private-key passphrase prompts.</p>
+    <p><strong>How do I remove saved credentials?</strong><br>Disconnect, edit the server, clear the password field, and save. Deleting a server removes its locally saved configuration and credential.</p>
     <p><strong>Why do folders show size as <code>-</code>?</strong><br>Remote directory sizes can be misleading on SFTP servers, so CloudBridge shows <code>-</code> for folders instead of a fixed placeholder size.</p>
 
     <h2>Before Requesting Support</h2>

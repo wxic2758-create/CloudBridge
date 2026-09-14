@@ -1,21 +1,22 @@
 import SwiftUI
 
-extension Color {
-    static let bridgeAccent = Color(red: 0.149, green: 0.659, blue: 0.941)
-}
-
 @main
 struct CloudBridgeApp: App {
     @State private var model = BrowserModel()
+    @State private var language = AppLanguage.shared
 
     var body: some Scene {
         WindowGroup {
-            BrowserView()
+            MainView()
                 .environment(model)
-                .frame(minWidth: 1040, minHeight: 660)
-                .tint(.bridgeAccent)
+                .environment(\.locale, Locale(identifier: AppLanguage.resolved(language.selection)))
+                .environment(\.layoutDirection, AppLanguage.isRTL(language.selection) ? .rightToLeft : .leftToRight)
+                .frame(minWidth: 1120, minHeight: 650)
+                .tint(Color.bridgeAccent)
         }
-        .windowStyle(.titleBar)
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unifiedCompact)
+        .defaultSize(width: 1320, height: 800)
         .commands {
             CommandGroup(replacing: .newItem) {}
         }

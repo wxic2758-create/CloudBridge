@@ -6,7 +6,7 @@ BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="${APP_NAME:-CloudBridge}"
 BUNDLE_ID="${BUNDLE_ID:-com.dazhang.CloudBridge}"
 APP_VERSION="${APP_VERSION:-0.1.0}"
-BUILD_NUMBER="${BUILD_NUMBER:-6}"
+BUILD_NUMBER="${BUILD_NUMBER:-13}"
 APP_CATEGORY="${APP_CATEGORY:-public.app-category.productivity}"
 APP_SIGN_IDENTITY="${APP_SIGN_IDENTITY:--}"
 INSTALLER_SIGN_IDENTITY="${INSTALLER_SIGN_IDENTITY:-}"
@@ -33,7 +33,9 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 cp "$BUILD_DIR/CloudBridge" "$MACOS_DIR/$APP_NAME"
 iconutil -c icns "$ROOT_DIR/Assets/CloudBridge.iconset" -o "$RESOURCES_DIR/CloudBridge.icns"
 cp "$ROOT_DIR/Resources/ssh-askpass.sh" "$RESOURCES_DIR/ssh-askpass.sh"
+cp "$ROOT_DIR/PrivacyInfo.xcprivacy" "$RESOURCES_DIR/PrivacyInfo.xcprivacy"
 chmod 755 "$RESOURCES_DIR/ssh-askpass.sh"
+[[ -x "$RESOURCES_DIR/ssh-askpass.sh" ]] || { echo "ssh-askpass.sh is not executable" >&2; exit 1; }
 for locale_dir in "$ROOT_DIR"/Resources/*.lproj; do
     [[ -d "$locale_dir" ]] || continue
     cp -R "$locale_dir" "$RESOURCES_DIR/"

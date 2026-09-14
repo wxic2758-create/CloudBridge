@@ -13,22 +13,34 @@ enum BrowserModelError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingHost:
-            NSLocalizedString("error.missingHost", comment: "Missing server host")
+            AppLanguage.text("error.missingHost")
         case .missingUsername:
-            NSLocalizedString("error.missingUsername", comment: "Missing SSH username")
+            AppLanguage.text("error.missingUsername")
         case .missingPassword:
-            NSLocalizedString("error.missingPassword", comment: "Missing password or key")
+            AppLanguage.text("error.missingPassword")
         case .invalidPort:
-            NSLocalizedString("error.invalidPort", comment: "Invalid SSH port")
+            AppLanguage.text("error.invalidPort")
         case .securityScopedAccessRequired(let path):
-            String(format: NSLocalizedString("error.keyAccess", comment: "Private key access required"), path)
+            String(format: AppLanguage.text("error.keyAccess"), path)
         }
     }
 }
-
 @Observable
 @MainActor
 final class BrowserModel {
+    enum LocalFileStatus: Equatable {
+        case none
+        case localCopy
+        case current
+        case missing
+        case remoteUpdated
+    }
+
+    private struct QueuedDownload {
+        let item: RemoteItem
+        let taskID: DownloadTask.ID
+    }
+
     var profile = ServerProfile()
     var savedServers: [SavedServer] = []
     var selectedServerID: SavedServer.ID?
@@ -38,24 +50,44 @@ final class BrowserModel {
     var localDownloadDirectory = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
     var currentPath = "."
     var items: [RemoteItem] = []
-    var selectedItemID: RemoteItem.ID?
+    var selectedItemIDs: Set<RemoteItem.ID> = []
     var isConnected = false
     var isLoading = false
     var isDownloading = false
-    var statusMessage = "Not connected"
+    var statusMessage = AppLanguage.text("status.disconnected")
+    var isPreparingPreview = false
     var errorMessage: String?
-    var pendingHostKey: HostKeyIdentity?
     var downloadState = DownloadState.idle
     var downloadTasks: [DownloadTask] = []
+    var lastEnqueuedDownloadTaskID: DownloadTask.ID?
 
     private let client = SFTPClient()
-    private let previewer = QuickLookPreviewer()
+    var previewURL: URL?
+
+    func dismissPreview() {
+        guard let url = previewURL else { return }
+        previewURL = nil
+        try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+    }
+
+    private func showPreview(_ url: URL) {
+        dismissPreview()
+        previewURL = url
+    }
     private var activeDownloadTaskID: DownloadTask.ID?
     private var activeDownloadOperation: Task<Void, Never>?
-    private var pendingConnectionProfile: ServerProfile?
+    private var downloadQueue: [QueuedDownload] = []
+    private var privateKeyAccess: PrivateKeyAccess?
+    private var activeOperation: Task<Void, Never>?
+    private var isDisconnecting = false
 
-    init() {
-        savedServers = SavedServerStore.load()
+    private func clearPendingConnection() {
+        privateKeyAccess = nil
+    }
+
+    init(initialServers: [SavedServer]? = nil, initialDownloadTasks: [DownloadTask]? = nil) {
+        savedServers = initialServers ?? SavedServerStore.load()
+        downloadTasks = initialDownloadTasks ?? (initialServers == nil ? DownloadHistoryStore.load() : [])
         localDownloadDirectory = SecurityScopedBookmarkStore.url(for: .downloadDirectory)
             ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
 
@@ -64,35 +96,103 @@ final class BrowserModel {
         }
     }
 
+    var selectedItemID: RemoteItem.ID? {
+        get { selectedItemIDs.count == 1 ? selectedItemIDs.first : nil }
+        set { selectedItemIDs = newValue.map { Set([$0]) } ?? [] }
+    }
+
+    var selectedItems: [RemoteItem] {
+        items.filter { selectedItemIDs.contains($0.id) && $0.name != ".." }
+    }
+
     var selectedItem: RemoteItem? {
-        items.first { $0.id == selectedItemID }
+        selectedItems.count == 1 ? selectedItems.first : nil
+    }
+
+    var activeDownloadCount: Int {
+        downloadTasks.reduce(into: 0) { count, task in
+            if task.status == .queued || task.status == .downloading { count += 1 }
+        }
+    }
+
+    var hasDownloadHistory: Bool {
+        downloadTasks.contains { task in
+            switch task.status {
+            case .queued, .downloading: false
+            case .completed, .cancelled, .failed: true
+            }
+        }
+    }
+
+    var canQueueDownloads: Bool {
+        isConnected && !isLoading && !isDisconnecting
+    }
+
+    func completedDownload(for item: RemoteItem) -> DownloadTask? {
+        guard let serverID = selectedServer?.id else { return nil }
+        return downloadTasks.first {
+            $0.status == .completed && $0.serverID == serverID && $0.remotePath == item.path
+        }
+    }
+
+    func existingLocalDownload(for item: RemoteItem) -> URL? {
+        var names = [item.localDownloadName]
+        if item.localDownloadName != item.name { names.append(item.name) }
+        return names.lazy
+            .map { self.localDownloadDirectory.appending(path: $0) }
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+    }
+
+    func localFileStatus(for item: RemoteItem) -> LocalFileStatus {
+        let task = completedDownload(for: item)
+        let taskDestination = task?.destination.flatMap {
+            FileManager.default.fileExists(atPath: $0.path) ? $0 : nil
+        }
+        let localURL = taskDestination ?? existingLocalDownload(for: item)
+        let localExists = localURL.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+
+        guard let task else { return localExists ? .localCopy : .none }
+        guard localExists else { return .missing }
+        switch task.remoteMetadataMatches(item) {
+        case true: return .current
+        case false: return .remoteUpdated
+        case nil: return .localCopy
+        }
     }
 
     var isBusy: Bool {
-        isLoading || isDownloading
+        isLoading || isDownloading || isDisconnecting
     }
 
     func newServer() {
-        guard isConnected == false, isLoading == false else {
+        guard !isBusy else {
             return
         }
 
-        editingServer = SavedServer()
+        if !isConnected { clearPendingConnection() }
+        editingServer = SavedServer(
+            host: "192.168.1.\(Int.random(in: 2...254))",
+            username: "root"
+        )
         editingPassword = ""
         isShowingServerEditor = true
     }
 
     func editSelectedServer() {
-        guard let server = selectedServer, isConnected == false else {
+        guard let server = selectedServer, isConnected == false, isBusy == false, !isDisconnecting else {
             return
         }
 
+        clearPendingConnection()
         editingServer = server
-        editingPassword = ServerCredentialStore.password(for: server.id) ?? ""
+        editingPassword = server.password
         isShowingServerEditor = true
     }
 
     func saveEditingServer() {
+        // Adding a profile must not replace the live connection or its credentials.
+        let addingWhileConnected = isConnected && !savedServers.contains { $0.id == editingServer.id }
+        guard (!isConnected || addingWhileConnected), !isBusy else { return }
         var server = editingServer
         server.name = server.name.trimmingCharacters(in: .whitespacesAndNewlines)
         server.host = server.host.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -106,31 +206,24 @@ final class BrowserModel {
             return
         }
 
+        server.password = editingPassword
+
         if let index = savedServers.firstIndex(where: { $0.id == server.id }) {
             savedServers[index] = server
         } else {
             savedServers.append(server)
         }
 
-        do {
-            if editingPassword.isEmpty {
-                try ServerCredentialStore.deletePassword(for: server.id)
-            } else {
-                try ServerCredentialStore.save(editingPassword, for: server.id)
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-            statusMessage = error.localizedDescription
-            return
-        }
-
         SavedServerStore.save(savedServers)
-        selectedServerID = server.id
-        profile = server.preparedForConnection(password: ServerCredentialStore.password(for: server.id) ?? "")
-        currentPath = server.defaultRemotePath
-        items = []
+        if !addingWhileConnected {
+            selectedServerID = server.id
+            profile = server.preparedForConnection()
+            currentPath = server.defaultRemotePath
+            items = []
+            statusMessage = AppLanguage.text("connection.ready")
+        }
         isShowingServerEditor = false
-        statusMessage = "Ready to connect"
+        editingPassword = ""
     }
 
     func choosePrivateKey() {
@@ -140,12 +233,19 @@ final class BrowserModel {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         if panel.runModal() == .OK, let url = panel.url {
-            editingServer.privateKeyPath = url.path
+            do {
+                editingServer.privateKeyBookmark = try PrivateKeyAccess.makeBookmark(for: url)
+                editingServer.privateKeyPath = url.path
+            } catch {
+                errorMessage = error.localizedDescription
+                statusMessage = error.localizedDescription
+            }
         }
     }
 
     func clearPrivateKey() {
         editingServer.privateKeyPath = nil
+        editingServer.privateKeyBookmark = nil
     }
 
     func deleteSelectedServer() {
@@ -153,18 +253,14 @@ final class BrowserModel {
             return
         }
 
+        clearPendingConnection()
         savedServers.removeAll { $0.id == selectedServerID }
-        do {
-            try ServerCredentialStore.deletePassword(for: selectedServerID)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
         SavedServerStore.save(savedServers)
         self.selectedServerID = nil
         profile = ServerProfile()
         currentPath = "."
         items = []
-        statusMessage = "Choose or add a server"
+        statusMessage = AppLanguage.text("status.noServer")
     }
 
     func selectSavedServer(_ id: SavedServer.ID?) {
@@ -172,34 +268,39 @@ final class BrowserModel {
             return
         }
 
+        clearPendingConnection()
         selectedServerID = id
         guard let server = selectedServer else {
             profile = ServerProfile()
             currentPath = "."
             items = []
-            statusMessage = "Choose or add a server"
+            statusMessage = AppLanguage.text("status.noServer")
             return
         }
 
-        profile = server.preparedForConnection(password: ServerCredentialStore.password(for: server.id) ?? "")
+        profile = server.preparedForConnection()
         currentPath = server.defaultRemotePath
         items = []
         selectedItemID = nil
-        statusMessage = "Ready to connect"
+        statusMessage = AppLanguage.text("connection.ready")
     }
 
     var selectedServer: SavedServer? {
         savedServers.first { $0.id == selectedServerID }
     }
 
-    func connect() {
-        connect(approvedFingerprint: nil, profile: nil)
+    func preparedProfileForConnection() -> ServerProfile {
+        // The selected saved server is the source of truth. `profile` is transient and
+        // intentionally loses its password when a connection is torn down.
+        (selectedServer?.preparedForConnection() ?? profile.preparedForConnection())
     }
 
-    private func connect(approvedFingerprint: String?, profile pendingProfile: ServerProfile?) {
+    func connect() {
+        guard !isConnected, !isBusy else { return }
+        clearPendingConnection()
         run { [self] in
-            self.statusMessage = "Connecting..."
-            let connectionProfile = (pendingProfile ?? self.profile).preparedForConnection()
+            self.statusMessage = AppLanguage.text("status.connecting")
+            var connectionProfile = self.preparedProfileForConnection()
 
             if connectionProfile.host.isEmpty {
                 throw BrowserModelError.missingHost
@@ -214,70 +315,77 @@ final class BrowserModel {
                 throw BrowserModelError.missingPassword
             }
             if let key = connectionProfile.privateKeyPath, !key.isEmpty {
-                var isDirectory: ObjCBool = false
-                guard FileManager.default.fileExists(atPath: key, isDirectory: &isDirectory), !isDirectory.boolValue else {
+                guard let index = savedServers.firstIndex(where: { $0.id == selectedServerID }),
+                      savedServers[index].privateKeyPath == key else {
                     throw BrowserModelError.securityScopedAccessRequired(key)
                 }
+                let access = try PrivateKeyAccess(bookmark: savedServers[index].privateKeyBookmark, path: key)
+                privateKeyAccess = access
+                // Bookmarks track moves. Refresh stale metadata only while access is active.
+                savedServers[index].privateKeyPath = access.url.path
+                savedServers[index].privateKeyBookmark = access.bookmark
+                SavedServerStore.save(savedServers)
+                connectionProfile.privateKeyPath = access.url.path
             }
 
             self.profile = connectionProfile
-            do {
-                try await self.client.connect(
-                    profile: connectionProfile,
-                    approvedFingerprint: approvedFingerprint
-                )
-            } catch let error as HostKeyTrustError {
-                switch error {
-                case let .confirmationRequired(identity):
-                    self.pendingHostKey = identity
-                    self.pendingConnectionProfile = connectionProfile
-                    self.statusMessage = "等待确认服务器身份"
-                    return
-                case .changed:
-                    throw error
-                }
-            }
+            try await self.client.connect(profile: connectionProfile)
+            try Task.checkCancellation()
             self.currentPath = self.selectedServer?.defaultRemotePath ?? "."
             try await self.refresh()
+            try Task.checkCancellation()
             self.isConnected = true
-            self.pendingConnectionProfile = nil
             let host = self.profile.host
-            self.statusMessage = "\(self.profile.username)@\(host):\(self.profile.port)"
+            self.statusMessage = AppLanguage.text("connection.connected") + " — \(self.profile.username)@\(host):\(self.profile.port)"
         }
     }
 
-    func approvePendingHostKey() {
-        guard let identity = pendingHostKey,
-              let pendingConnectionProfile else {
-            return
-        }
-
-        pendingHostKey = nil
-        self.pendingConnectionProfile = nil
-        connect(approvedFingerprint: identity.fingerprint, profile: pendingConnectionProfile)
-    }
-
-    func rejectPendingHostKey() {
-        pendingHostKey = nil
-        pendingConnectionProfile = nil
-        statusMessage = "未信任服务器主机指纹"
-    }
-
-    func disconnect() {
-        run { [self] in
-            try await self.client.disconnect()
-            self.isConnected = false
-            self.items = []
-            self.selectedItemID = nil
-            self.statusMessage = "Disconnected"
+    func switchServer(to id: SavedServer.ID) {
+        guard !isBusy, id != selectedServerID,
+              savedServers.contains(where: { $0.id == id }) else { return }
+        if isConnected {
+            disconnect(nextServerID: id)
+        } else {
+            selectSavedServer(id)
+            connect()
         }
     }
 
-    func refresh() async throws {
-        var nextItems = try await client.listDirectory(currentPath)
+    func disconnect() { disconnect(nextServerID: nil) }
+
+    private func disconnect(nextServerID: SavedServer.ID?) {
+        guard !isDisconnecting else { return }
+        isDisconnecting = true
+        let operation = activeOperation
+        let download = activeDownloadOperation
+        operation?.cancel()
+        download?.cancel()
+        Task { @MainActor in
+            // Cancellation is a request, not completion. Keep the key authorized until
+            // all operations and control-connection cleanup have actually returned.
+            await operation?.value
+            await download?.value
+            try? await client.disconnect()
+            clearPendingConnection()
+            isConnected = false
+            profile.password = ""
+            items = []
+            selectedItemID = nil
+            statusMessage = AppLanguage.text("status.disconnected")
+            isDisconnecting = false
+            if let nextServerID {
+                selectSavedServer(nextServerID)
+                connect()
+            }
+        }
+    }
+
+    func refresh(forceReload: Bool = false) async throws {
+        var nextItems = try await client.listDirectory(currentPath, useCache: !forceReload)
         if currentPath != "." && currentPath != "/" {
             nextItems.insert(.parent, at: 0)
         }
+        try Task.checkCancellation()
         items = nextItems
         selectedItemID = nil
     }
@@ -288,9 +396,9 @@ final class BrowserModel {
         }
 
         run { [self] in
-            self.statusMessage = "Refreshing..."
-            try await self.refresh()
-            self.statusMessage = "\(self.profile.username)@\(self.profile.host):\(self.profile.port)"
+            self.statusMessage = AppLanguage.text("status.refreshing")
+            try await self.refresh(forceReload: true)
+            self.statusMessage = AppLanguage.text("connection.connected") + " — \(self.profile.username)@\(self.profile.host):\(self.profile.port)"
         }
     }
 
@@ -312,11 +420,11 @@ final class BrowserModel {
             } else {
                 self.currentPath = item.path
             }
-            self.statusMessage = "Loading \(self.currentPath)..."
+            self.statusMessage = String(format: AppLanguage.text("status.loadingPath"), self.currentPath)
 
             do {
                 try await self.refresh()
-                self.statusMessage = "\(self.profile.username)@\(self.profile.host):\(self.profile.port)"
+                self.statusMessage = AppLanguage.text("connection.connected") + " — \(self.profile.username)@\(self.profile.host):\(self.profile.port)"
             } catch {
                 self.currentPath = previousPath
                 throw error
@@ -341,17 +449,20 @@ final class BrowserModel {
         run { [self] in
             let previousPath = self.currentPath
             self.currentPath = item.path
-            self.statusMessage = "Opening \(item.name)..."
+            self.statusMessage = String(format: AppLanguage.text("status.openingItem"), item.name)
 
             do {
                 try await self.refresh()
-                self.statusMessage = "\(self.profile.username)@\(self.profile.host):\(self.profile.port)"
+                self.statusMessage = AppLanguage.text("connection.connected") + " — \(self.profile.username)@\(self.profile.host):\(self.profile.port)"
             } catch {
+                try Task.checkCancellation()
                 self.currentPath = previousPath
-                self.statusMessage = "Preparing preview for \(item.name)..."
+                self.isPreparingPreview = true
+                self.statusMessage = String(format: AppLanguage.text("status.preparingPreview"), item.name)
+                defer { self.isPreparingPreview = false }
                 let previewURL = try await self.client.downloadFileForPreview(item)
-                self.previewer.show(url: previewURL)
-                self.statusMessage = "Previewing \(item.name)"
+                self.showPreview(previewURL)
+                self.statusMessage = String(format: AppLanguage.text("status.previewingItem"), item.name)
             }
         }
     }
@@ -362,34 +473,58 @@ final class BrowserModel {
         }
 
         run { [self] in
-            self.statusMessage = "Preparing preview for \(item.name)..."
+            self.isPreparingPreview = true
+            defer { self.isPreparingPreview = false }
+            self.statusMessage = String(format: AppLanguage.text("status.preparingPreview"), item.name)
             let previewURL = try await self.client.downloadFileForPreview(item)
-            self.previewer.show(url: previewURL)
-            self.statusMessage = "Previewing \(item.name)"
+            self.showPreview(previewURL)
+            self.statusMessage = String(format: AppLanguage.text("status.previewingItem"), item.name)
         }
     }
 
     func downloadSelected() {
-        guard let selectedItem, selectedItem.name != ".." else {
-            return
-        }
-
-        download(selectedItem)
+        download(selectedItems)
     }
 
     func download(_ item: RemoteItem) {
-        runDownload { [self] in
+        download([item])
+    }
+
+    func download(_ items: [RemoteItem]) {
+        let acceptedItems = items.filter { $0.name != ".." }
+        guard canQueueDownloads, !acceptedItems.isEmpty else { return }
+
+        enqueueDownloads(acceptedItems)
+    }
+
+    private func enqueueDownloads(_ items: [RemoteItem]) {
+        guard !items.isEmpty else { return }
+
+        let serverName = selectedServer?.displayName ?? profile.host
+        let serverID = selectedServer?.id
+        let jobs = items.map { item in
             let task = DownloadTask(
                 itemName: item.name,
                 remotePath: item.path,
-                serverName: self.selectedServer?.displayName ?? self.profile.host,
-                isDirectory: item.isDirectory
+                serverName: serverName,
+                isDirectory: item.isDirectory,
+                serverID: serverID,
+                remoteSize: item.size,
+                remoteModifiedAt: item.modifiedAt,
+                status: .queued
             )
-            self.downloadTasks.insert(task, at: 0)
-            self.activeDownloadTaskID = task.id
-            self.downloadState = .downloading(item.name)
-            self.statusMessage = "Downloading \(item.name)..."
+            return (item: item, task: task)
+        }
+        downloadTasks.insert(contentsOf: jobs.map(\.task), at: 0)
+        downloadQueue.append(contentsOf: jobs.map { QueuedDownload(item: $0.item, taskID: $0.task.id) })
+        lastEnqueuedDownloadTaskID = jobs.first?.task.id
 
+        guard !isDownloading else { return }
+        runDownloadQueue()
+    }
+
+    private func runDownloadQueue() {
+        runDownload { [self] in
             let accessURL = SecurityScopedBookmarkStore.startAccessingURL(
                 for: .downloadDirectory,
                 matchingPath: self.localDownloadDirectory.path
@@ -400,12 +535,39 @@ final class BrowserModel {
             }
             defer {
                 accessURL?.stopAccessingSecurityScopedResource()
+                self.downloadQueue.removeAll()
             }
 
-            let destination = try await self.client.download(item, to: self.localDownloadDirectory)
-            self.updateTask(task.id, status: .completed, destination: destination)
-            self.downloadState = .completed(item.name)
-            self.statusMessage = "Downloaded to \(destination.path)"
+            while !self.downloadQueue.isEmpty {
+                try Task.checkCancellation()
+                let job = self.downloadQueue.removeFirst()
+                self.activeDownloadTaskID = job.taskID
+                self.startTask(job.taskID)
+                self.downloadState = .downloading(job.item.name)
+                self.statusMessage = String(format: AppLanguage.text("status.downloadingItem"), job.item.name)
+
+                do {
+                    let destination = try await self.client.download(job.item, to: self.localDownloadDirectory) { [weak self, taskID = job.taskID] progress in
+                        await MainActor.run {
+                            guard let self, self.activeDownloadTaskID == taskID,
+                                  self.activeDownloadOperation?.isCancelled == false else { return }
+                            self.updateTask(taskID, progress: progress)
+                        }
+                    }
+                    self.updateTask(job.taskID, status: .completed, destination: destination)
+                    self.downloadState = .completed(job.item.name)
+                    self.statusMessage = String(format: AppLanguage.text("status.downloaded"), destination.path)
+                } catch let error as ProcessRunnerError where error == .cancelled {
+                    throw error
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    self.updateTask(job.taskID, status: .failed(error.localizedDescription))
+                    self.downloadState = .failed(error.localizedDescription)
+                    self.errorMessage = error.localizedDescription
+                    self.statusMessage = error.localizedDescription
+                }
+            }
         }
     }
 
@@ -414,18 +576,18 @@ final class BrowserModel {
             return
         }
 
-        statusMessage = "正在取消下载..."
+        statusMessage = AppLanguage.text("status.cancellingDownload")
         activeDownloadOperation?.cancel()
     }
 
     func retry(_ task: DownloadTask) {
         guard isConnected else {
-            statusMessage = "请先连接服务器后再重试下载"
+            statusMessage = AppLanguage.text("status.retryConnectFirst")
             return
         }
 
-        guard task.serverName == (selectedServer?.displayName ?? profile.host) else {
-            statusMessage = "请切换到原服务器后再重试下载"
+        guard task.belongs(to: selectedServer?.id) else {
+            statusMessage = AppLanguage.text("status.retrySameServer")
             return
         }
 
@@ -459,11 +621,77 @@ final class BrowserModel {
     }
 
     func reveal(_ task: DownloadTask) {
-        guard let destination = task.destination else {
-            return
+        guard let destination = task.destination else { return }
+        revealLocalDestination(destination, taskID: task.id)
+    }
+
+    func revealDownloaded(_ item: RemoteItem) {
+        let task = completedDownload(for: item)
+        let taskDestination = task?.destination.flatMap {
+            FileManager.default.fileExists(atPath: $0.path) ? $0 : nil
+        }
+        guard let destination = taskDestination ?? existingLocalDownload(for: item) else { return }
+        revealLocalDestination(destination, taskID: task?.id)
+    }
+
+    private func revealLocalDestination(_ originalDestination: URL, taskID: DownloadTask.ID?) {
+        var destination = originalDestination
+
+        if destination.lastPathComponent.hasPrefix("."),
+           FileManager.default.fileExists(atPath: destination.path) {
+            let accessURL = SecurityScopedBookmarkStore.startAccessingURL(
+                for: .downloadDirectory,
+                matchingPath: localDownloadDirectory.path
+            )
+            defer { accessURL?.stopAccessingSecurityScopedResource() }
+            do {
+                let visibleDestination = availableVisibleDestination(for: destination)
+                try FileManager.default.moveItem(at: destination, to: visibleDestination)
+                destination = visibleDestination
+                if let taskID, let index = downloadTasks.firstIndex(where: { $0.id == taskID }) {
+                    downloadTasks[index].destination = destination
+                    DownloadHistoryStore.save(downloadTasks)
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                return
+            }
         }
 
         NSWorkspace.shared.activateFileViewerSelecting([destination])
+    }
+
+    private func availableVisibleDestination(for hiddenURL: URL) -> URL {
+        let directory = hiddenURL.deletingLastPathComponent()
+        let visibleName = "_\(hiddenURL.lastPathComponent)"
+        let preferred = directory.appending(path: visibleName)
+        guard FileManager.default.fileExists(atPath: preferred.path) else { return preferred }
+        for index in 2...999 {
+            let candidate = directory.appending(path: "\(visibleName) \(index)")
+            if !FileManager.default.fileExists(atPath: candidate.path) { return candidate }
+        }
+        return directory.appending(path: "\(visibleName) \(UUID().uuidString)")
+    }
+
+    /// Removes finished records while preserving queued and active transfers.
+    func clearDownloadHistory() {
+        downloadTasks.removeAll { task in
+            switch task.status {
+            case .queued, .downloading: false
+            case .completed, .cancelled, .failed: true
+            }
+        }
+        DownloadHistoryStore.save(downloadTasks)
+    }
+
+    private func updateTask(_ id: DownloadTask.ID, progress: DownloadProgress) {
+        guard let index = downloadTasks.firstIndex(where: { $0.id == id }) else { return }
+        downloadTasks[index].apply(progress)
+    }
+
+    private func startTask(_ id: DownloadTask.ID) {
+        guard let index = downloadTasks.firstIndex(where: { $0.id == id }) else { return }
+        downloadTasks[index].start()
     }
 
     private func updateTask(_ id: DownloadTask.ID, status: DownloadTask.Status, destination: URL? = nil) {
@@ -471,31 +699,42 @@ final class BrowserModel {
             return
         }
 
-        downloadTasks[index].status = status
-        downloadTasks[index].destination = destination
+        downloadTasks[index].finish(status: status, destination: destination)
+        DownloadHistoryStore.save(downloadTasks)
     }
 
     private func run(_ operation: @escaping @MainActor () async throws -> Void) {
-        guard isLoading == false else {
+        guard !isBusy else {
             return
         }
 
         isLoading = true
         errorMessage = nil
 
-        Task { @MainActor in
+        activeOperation = Task { @MainActor in
             do {
+                try Task.checkCancellation()
                 try await operation()
             } catch {
-                errorMessage = error.localizedDescription
-                statusMessage = error.localizedDescription
+                if !isConnected {
+                    // Use an uncancelled task for cleanup; a cancelled runner would
+                    // otherwise skip ssh -O exit and leave a control master behind.
+                    let cleanup = Task { try? await client.disconnect() }
+                    await cleanup.value
+                    clearPendingConnection()
+                }
+                if !isDisconnecting && !(error is CancellationError) {
+                    errorMessage = error.localizedDescription
+                    statusMessage = error.localizedDescription
+                }
             }
+            activeOperation = nil
             isLoading = false
         }
     }
 
     private func runDownload(_ operation: @escaping @MainActor () async throws -> Void) {
-        guard isDownloading == false, isLoading == false else {
+        guard isConnected, !isBusy else {
             return
         }
 
@@ -513,9 +752,7 @@ final class BrowserModel {
                 errorMessage = error.localizedDescription
                 statusMessage = error.localizedDescription
                 downloadState = .failed(error.localizedDescription)
-                if let activeDownloadTaskID {
-                    updateTask(activeDownloadTaskID, status: .failed(error.localizedDescription))
-                }
+                finishPendingDownloads(status: .failed(error.localizedDescription))
             }
             activeDownloadTaskID = nil
             activeDownloadOperation = nil
@@ -524,13 +761,19 @@ final class BrowserModel {
     }
 
     private func markActiveDownloadCancelled() {
-        if let activeDownloadTaskID {
-            updateTask(activeDownloadTaskID, status: .cancelled)
-        }
+        finishPendingDownloads(status: .cancelled)
         if case .downloading(let itemName) = downloadState {
             downloadState = .cancelled(itemName)
         }
-        statusMessage = "下载已取消"
+        statusMessage = AppLanguage.text("status.downloadCancelled")
+    }
+
+    private func finishPendingDownloads(status: DownloadTask.Status) {
+        for index in downloadTasks.indices {
+            if downloadTasks[index].status == .queued || downloadTasks[index].status == .downloading {
+                downloadTasks[index].finish(status: status)
+            }
+        }
     }
 
     private func parentPath(for path: String) -> String {
@@ -640,46 +883,5 @@ private enum SecurityScopedBookmarkStore {
 
     private static func pathsMatch(_ lhs: String, _ rhs: String) -> Bool {
         NSString(string: lhs).standardizingPath == NSString(string: rhs).standardizingPath
-    }
-}
-
-private final class QuickLookPreviewer: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDelegate {
-    private var previewURL: URL?
-
-    @MainActor
-    func show(url: URL) {
-        previewURL = url
-
-        guard let panel = QLPreviewPanel.shared() else {
-            NSWorkspace.shared.open(url)
-            return
-        }
-
-        panel.dataSource = self
-        panel.delegate = self
-        panel.reloadData()
-        panel.makeKeyAndOrderFront(nil)
-    }
-
-    func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
-        previewURL == nil ? 0 : 1
-    }
-
-    func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
-        previewURL.map { $0 as NSURL }
-    }
-
-    func previewPanelWillClose(_ panel: QLPreviewPanel!) {
-        cleanupPreviewFile()
-    }
-
-    private func cleanupPreviewFile() {
-        guard let previewURL else {
-            return
-        }
-
-        let previewDirectory = previewURL.deletingLastPathComponent()
-        try? FileManager.default.removeItem(at: previewDirectory)
-        self.previewURL = nil
     }
 }

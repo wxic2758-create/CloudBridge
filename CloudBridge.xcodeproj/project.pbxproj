@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		100000000000000000000001 /* BrowserModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* BrowserModel.swift */; };
-		100000000000000000000002 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* BrowserView.swift */; };
 		100000000000000000000003 /* CloudBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* CloudBridgeApp.swift */; };
 		100000000000000000000004 /* DownloadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000014 /* DownloadState.swift */; };
 		100000000000000000000005 /* RemoteItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000015 /* RemoteItem.swift */; };
@@ -17,13 +16,28 @@
 		300000000000000000000003 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000004 /* ProcessRunner.swift */; };
 		100000000000000000000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000019 /* Assets.xcassets */; };
 		200000000000000000000001 /* ssh-askpass.sh in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* ssh-askpass.sh */; };
-		300000000000000000000001 /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000002 /* Resources */; };
+		400000000000000000000001 /* ProcessRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400000000000000000000002 /* ProcessRunnerTests.swift */; };
+		500000000000000000000001 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000011 /* Workspace.swift */; };
+		500000000000000000000002 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000012 /* AppLanguage.swift */; };
+		600000000000000000000003 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000000000000000000004 /* MainView.swift */; };
+		700000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 700000000000000000000002 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		400000000000000000000003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000031 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000026;
+			remoteInfo = CloudBridge;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		400000000000000000000002 /* ProcessRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRunnerTests.swift; sourceTree = "<group>"; };
+		400000000000000000000004 /* CloudBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CloudBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000010 /* CloudBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000011 /* BrowserModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserModel.swift; sourceTree = "<group>"; };
-		100000000000000000000012 /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		100000000000000000000013 /* CloudBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudBridgeApp.swift; sourceTree = "<group>"; };
 		100000000000000000000014 /* DownloadState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadState.swift; sourceTree = "<group>"; };
 		100000000000000000000015 /* RemoteItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteItem.swift; sourceTree = "<group>"; };
@@ -33,8 +47,93 @@
 		300000000000000000000004 /* ProcessRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRunner.swift; sourceTree = "<group>"; };
 		100000000000000000000020 /* CloudBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CloudBridge.entitlements; sourceTree = "<group>"; };
 		200000000000000000000002 /* ssh-askpass.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Resources/ssh-askpass.sh; sourceTree = "<group>"; };
-		300000000000000000000002 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = "<group>"; };
+		500000000000000000000011 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
+		500000000000000000000012 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		600000000000000000000004 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		700000000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXTargetDependency section */
+		400000000000000000000010 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000026 /* CloudBridge */;
+			targetProxy = 400000000000000000000003 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXSourcesBuildPhase section */
+		400000000000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				400000000000000000000001 /* ProcessRunnerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		400000000000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		400000000000000000000011 /* Tests Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 13;
+				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dazhang.CloudBridgeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CloudBridge.app/Contents/MacOS/CloudBridge";
+			};
+			name = Debug;
+		};
+		400000000000000000000012 /* Tests Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 13;
+				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dazhang.CloudBridgeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CloudBridge.app/Contents/MacOS/CloudBridge";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		400000000000000000000007 /* Build configuration list for PBXNativeTarget "CloudBridgeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				400000000000000000000011 /* Tests Debug */,
+				400000000000000000000012 /* Tests Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
 
 /* Begin PBXGroup section */
 		100000000000000000000021 = {
@@ -43,8 +142,9 @@
 				100000000000000000000022 /* Sources */,
 				100000000000000000000023 /* Assets */,
 				100000000000000000000020 /* CloudBridge.entitlements */,
+				700000000000000000000002 /* PrivacyInfo.xcprivacy */,
 				200000000000000000000002 /* ssh-askpass.sh */,
-				300000000000000000000002 /* Resources */,
+				400000000000000000000005 /* Tests */,
 				100000000000000000000024 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,7 +161,9 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000011 /* BrowserModel.swift */,
-				100000000000000000000012 /* BrowserView.swift */,
+				500000000000000000000011 /* Workspace.swift */,
+				500000000000000000000012 /* AppLanguage.swift */,
+				600000000000000000000004 /* MainView.swift */,
 				100000000000000000000013 /* CloudBridgeApp.swift */,
 				100000000000000000000014 /* DownloadState.swift */,
 				100000000000000000000015 /* RemoteItem.swift */,
@@ -84,8 +186,17 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000010 /* CloudBridge.app */,
+				400000000000000000000004 /* CloudBridgeTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		400000000000000000000005 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				400000000000000000000002 /* ProcessRunnerTests.swift */,
+			);
+			path = Tests/CloudBridgeTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -109,11 +220,29 @@
 			productReference = 100000000000000000000010 /* CloudBridge.app */;
 			productType = "com.apple.product-type.application";
 		};
+		400000000000000000000006 /* CloudBridgeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 400000000000000000000007 /* Build configuration list for PBXNativeTarget "CloudBridgeTests" */;
+			buildPhases = (
+				400000000000000000000008 /* Sources */,
+				400000000000000000000009 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				400000000000000000000010 /* PBXTargetDependency */,
+			);
+			name = CloudBridgeTests;
+			productName = CloudBridgeTests;
+			productReference = 400000000000000000000004 /* CloudBridgeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		300000000000000000000005 /* Copy localization bundles */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -124,7 +253,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\ncp -R \"${SRCROOT}/Resources/\"*.lproj \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/\"\n";
+			shellScript = "mkdir -p \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\ncp -R \"${SRCROOT}/Resources/\"*.lproj \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/\"\nchmod 755 \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ssh-askpass.sh\"\ntest -x \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ssh-askpass.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -138,6 +267,10 @@
 				TargetAttributes = {
 					100000000000000000000026 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					400000000000000000000006 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 100000000000000000000026;
 					};
 				};
 			};
@@ -156,6 +289,7 @@
 			projectRoot = "";
 			targets = (
 				100000000000000000000026 /* CloudBridge */,
+				400000000000000000000006 /* CloudBridgeTests */,
 			);
 		};
 /* End PBXProject section */
@@ -166,7 +300,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000009 /* Assets.xcassets in Resources */,
-				300000000000000000000001 /* Resources in Resources */,
+				200000000000000000000001 /* ssh-askpass.sh in Resources */,
+				700000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -188,7 +323,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000001 /* BrowserModel.swift in Sources */,
-				100000000000000000000002 /* BrowserView.swift in Sources */,
+				500000000000000000000001 /* Workspace.swift in Sources */,
+				500000000000000000000002 /* AppLanguage.swift in Sources */,
+				600000000000000000000003 /* MainView.swift in Sources */,
 				100000000000000000000003 /* CloudBridgeApp.swift in Sources */,
 				100000000000000000000004 /* DownloadState.swift in Sources */,
 				100000000000000000000005 /* RemoteItem.swift in Sources */,
@@ -320,7 +457,7 @@
 				CODE_SIGN_ENTITLEMENTS = CloudBridge.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_APP_SANDBOX = YES;
@@ -347,7 +484,7 @@
 				CODE_SIGN_ENTITLEMENTS = CloudBridge.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_APP_SANDBOX = YES;

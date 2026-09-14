@@ -16,6 +16,13 @@ def entries(path):
 
 source = entries(ROOT / "Resources/en.lproj/Localizable.strings")
 errors = []
+localized_keys = set(source)
+source_key_pattern = re.compile(r'(?:copy|AppLanguage\.text)\("([^"]+)"')
+for swift_file in (ROOT / "Sources").rglob("*.swift"):
+    for key in source_key_pattern.findall(swift_file.read_text(encoding="utf-8")):
+        if "\\(" not in key and key not in localized_keys:
+            errors.append(f"source uses missing localization key: {key} ({swift_file.relative_to(ROOT)})")
+
 for locale in locales:
     path = ROOT / f"Resources/{locale}.lproj/Localizable.strings"
     if not path.exists():
@@ -29,6 +36,14 @@ for locale in locales:
         found_placeholders = re.findall(r'%(?:\d+\$)?[@dDuUxXfFeEgGcCsSpaAF]', found[key])
         if source_placeholders != found_placeholders:
             errors.append(f"{locale}:{key}: placeholders {found_placeholders} != {source_placeholders}")
+    if locale in {"zh-CN", "zh-TW"}:
+        untranslated = sorted(key for key in source if found.get(key) == source[key])
+        if untranslated:
+            errors.append(f"{locale}: untranslated English values={untranslated}")
+    if locale not in {"zh-CN", "zh-TW", "ja"}:
+        contaminated = sorted(key for key, value in found.items() if re.search(r'[\u4e00-\u9fff]', value))
+        if contaminated:
+            errors.append(f"{locale}: unexpected Han characters in values={contaminated}")
 
 if errors:
     print("Localization check failed:")
