@@ -3,6 +3,7 @@ import SwiftUI
 enum AppSection: Hashable {
     case servers
     case downloads
+    case settings
 }
 
 @main

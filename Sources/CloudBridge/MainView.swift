@@ -70,6 +70,9 @@ struct MainView: View {
     @State private var downloadButtonHovered = false
     @State private var downloadAvailabilityRevision = 0
     @State private var hoveredRemoteItemID: RemoteItem.ID?
+    @State private var localStatusHoverTarget: String?
+    @State private var localStatusHelpTarget: String?
+    @State private var localStatusHelpTask: Task<Void, Never>?
     private var canManage: Bool { !model.isConnected && !model.isBusy }
 
     var body: some View {
@@ -79,6 +82,7 @@ struct MainView: View {
             Divider().opacity(0.5)
             Group {
                 if section == .downloads { downloads }
+                else if section == .settings { SettingsView() }
                 else if model.isConnected { files }
                 else { connections }
             }
@@ -122,6 +126,7 @@ struct MainView: View {
             acknowledgeDownload(taskID)
         }
         .onPreferenceChange(WorkspaceFrames.self) { workspaceFrames = $0 }
+        .onDisappear { localStatusHelpTask?.cancel() }
         .coordinateSpace(name: "cloudbridgeWindow")
         .overlay { downloadFlightOverlay.allowsHitTesting(false) }
     }
@@ -175,32 +180,55 @@ struct MainView: View {
                 Text("CloudBridge").font(.title3.weight(.semibold))
             }
             Spacer()
-            Picker("", selection: $section) {
-                Text(copy("nav.servers")).tag(AppSection.servers)
-                Text(downloadSectionTitle).tag(AppSection.downloads)
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .controlSize(.large)
-            .frame(width: 240)
-            .background {
-                GeometryReader { proxy in
-                    Color.clear.preference(
-                        key: WorkspaceFrames.self,
-                        value: ["destination": proxy.frame(in: .named("cloudbridgeWindow"))]
+            HStack(spacing: 2) {
+                ForEach(Array([
+                    (AppSection.servers, "nav.servers"),
+                    (AppSection.downloads, "nav.tasks"),
+                    (AppSection.settings, "nav.settings")
+                ].enumerated()), id: \.offset) { _, entry in
+                    let (destination, key) = entry
+                    Button { section = destination } label: {
+                        ZStack {
+                            Text(copy(key))
+                                .font(.system(size: 13, weight: .medium))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
+                            if destination == .downloads {
+                                Text("\(min(model.activeDownloadCount, 99))")
+                                    .font(.caption2.weight(.semibold))
+                                    .monospacedDigit()
+                                    .foregroundStyle(Finish.lilac)
+                                    .frame(width: 22, height: 18)
+                                    .background(Finish.lilac.opacity(0.14), in: Capsule())
+                                    .opacity(model.activeDownloadCount > 0 ? 1 : 0)
+                                    .accessibilityHidden(model.activeDownloadCount == 0)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .padding(.trailing, 8)
+                            }
+                        }
+                        .frame(width: 112, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .background(
+                        section == destination || (destination == .downloads && downloadTabAcknowledged)
+                            ? .white.opacity(0.09) : .clear,
+                        in: RoundedRectangle(cornerRadius: 8)
                     )
+                    .background {
+                        if destination == .downloads {
+                            GeometryReader { proxy in
+                                Color.clear.preference(
+                                    key: WorkspaceFrames.self,
+                                    value: ["destination": proxy.frame(in: .named("cloudbridgeWindow"))]
+                                )
+                            }
+                        }
+                    }
+                    .foregroundStyle(section == destination ? .primary : .secondary)
+                    .accessibilityAddTraits(section == destination ? .isSelected : [])
                 }
             }
-            .overlay {
-                RoundedRectangle(cornerRadius: 7)
-                    .stroke(Finish.lilac.opacity(downloadTabAcknowledged ? 0.55 : 0), lineWidth: 1.5)
-            }
         }.padding(.horizontal, 30).padding(.vertical, 20)
-    }
-
-    private var downloadSectionTitle: String {
-        guard model.activeDownloadCount > 0 else { return copy("nav.tasks") }
-        return "\(copy("nav.tasks")) \(min(model.activeDownloadCount, 99))"
     }
 
     private var connections: some View {
@@ -261,19 +289,12 @@ struct MainView: View {
                                 .background(.white.opacity(model.selectedServerID == server.id ? 0.08 : 0.025), in: RoundedRectangle(cornerRadius: 11))
                                 .accessibilityAddTraits(model.selectedServerID == server.id ? .isSelected : [])
                         }
-                        HStack {
-                            Spacer()
-                            Button {
+                        Button {
                             model.errorMessage = nil
                             model.connect()
                         } label: {
-                            HStack { if model.isLoading { ProgressView().controlSize(.small) }; Text(copy(model.isLoading ? "connection.connecting" : "action.connect")) }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(!canManage || model.selectedServer == nil)
-                        }
+                            HStack { if model.isLoading { ProgressView().controlSize(.small) }; Text(copy(model.isLoading ? "connection.connecting" : "action.connect")) }.frame(maxWidth: .infinity)
+                        }.buttonStyle(BridgeActionStyle(prominent: true)).disabled(!canManage || model.selectedServer == nil)
                     } else {
                         Button { model.errorMessage = nil; model.newServer() } label: { Label(copy("action.addServer"), systemImage: "plus").frame(maxWidth: .infinity) }.buttonStyle(BridgeActionStyle(prominent: true))
                     }
@@ -428,10 +449,10 @@ struct MainView: View {
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     Button(copy("action.preview")) { if let item = model.selectedItem { model.preview(item) } }
-                        .buttonStyle(BridgeActionStyle(prominent: false))
+                        .buttonStyle(BridgeActionStyle(prominent: false, compact: true))
                         .disabled(!canPreview)
                     Button(copy("action.download"), action: model.downloadSelected)
-                        .buttonStyle(BridgeActionStyle(prominent: true))
+                        .buttonStyle(BridgeActionStyle(prominent: true, compact: true))
                         .disabled(!canDownload)
                         .onHover { downloadButtonHovered = $0 }
                 }.padding(.horizontal, 18).padding(.vertical, 16)
@@ -597,24 +618,24 @@ struct MainView: View {
         let selected = model.selectedItemIDs.contains(item.id)
         switch status {
         case .current:
-            localStatusButton("checkmark.circle.fill", help: "file.localCurrent", selected: selected) {
+            localStatusButton("checkmark.circle.fill", itemID: item.id, help: "file.localCurrent", selected: selected) {
                 model.revealDownloaded(item)
             }
         case .localCopy:
-            localStatusButton("doc.badge.checkmark", help: "file.localCopy", selected: selected) {
+            localStatusButton("doc.badge.checkmark", itemID: item.id, help: "file.localCopy", selected: selected) {
                 model.revealDownloaded(item)
             }
         case .missing:
-            localStatusButton("exclamationmark.circle", help: "file.localMissing", enabled: model.canQueueDownloads, selected: selected) {
+            localStatusButton("exclamationmark.circle", itemID: item.id, help: "file.localMissing", enabled: model.canQueueDownloads, selected: selected) {
                 model.download(item)
             }
         case .remoteUpdated:
-            localStatusButton("arrow.clockwise.circle", help: "file.remoteUpdated", enabled: model.canQueueDownloads, selected: selected) {
+            localStatusButton("arrow.clockwise.circle", itemID: item.id, help: "file.remoteUpdated", enabled: model.canQueueDownloads, selected: selected) {
                 model.download(item)
             }
         case .none:
             if hoveredRemoteItemID == item.id || model.selectedItemIDs.contains(item.id) {
-                localStatusButton("arrow.down.circle", help: "action.download", enabled: model.canQueueDownloads, selected: selected) {
+                localStatusButton("arrow.down.circle", itemID: item.id, help: "action.download", enabled: model.canQueueDownloads, selected: selected) {
                     model.download(item)
                 }
             }
@@ -623,19 +644,48 @@ struct MainView: View {
 
     private func localStatusButton(
         _ symbol: String,
+        itemID: RemoteItem.ID,
         help key: String,
         enabled: Bool = true,
         selected: Bool,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        let target = "\(itemID)|\(key)"
+        return Button(action: action) {
             Image(systemName: symbol).frame(width: 28, height: 28)
         }
         .buttonStyle(.borderless)
         .foregroundStyle(selected ? Finish.actionInk : Finish.lilac)
         .disabled(!enabled)
-        .help(copy(key))
         .accessibilityLabel(copy(key))
+        .onHover { hovering in
+            localStatusHelpTask?.cancel()
+            if hovering {
+                localStatusHoverTarget = target
+                localStatusHelpTask = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(150))
+                    guard !Task.isCancelled, localStatusHoverTarget == target else { return }
+                    localStatusHelpTarget = target
+                }
+            } else {
+                if localStatusHoverTarget == target { localStatusHoverTarget = nil }
+                if localStatusHelpTarget == target { localStatusHelpTarget = nil }
+            }
+        }
+        .popover(
+            isPresented: Binding(
+                get: { localStatusHelpTarget == target },
+                set: { presented in
+                    if !presented, localStatusHelpTarget == target { localStatusHelpTarget = nil }
+                }
+            ),
+            arrowEdge: .bottom
+        ) {
+            Text(copy(key))
+                .font(.callout)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+        }
     }
 
     @ViewBuilder
@@ -958,15 +1008,17 @@ private struct ConnectionEditor: View {
 /// A softly lit rectangular surface, retaining SwiftUI Button semantics.
 private struct BridgeActionStyle: ButtonStyle {
     var prominent: Bool
+    var compact = false
 
     func makeBody(configuration: Configuration) -> some View {
-        ActionSurface(label: configuration.label, prominent: prominent,
+        ActionSurface(label: configuration.label, prominent: prominent, compact: compact,
                       pressed: configuration.isPressed)
     }
 
     private struct ActionSurface<Label: View>: View {
         let label: Label
         let prominent: Bool
+        let compact: Bool
         let pressed: Bool
         @Environment(\.isEnabled) private var enabled
         @Environment(\.colorSchemeContrast) private var contrast
@@ -978,11 +1030,11 @@ private struct BridgeActionStyle: ButtonStyle {
 
         var body: some View {
             label
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: compact ? 14 : 15, weight: .medium))
                 .foregroundStyle(prominent ? Finish.actionInk : .primary)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-                .frame(minHeight: 52)
+                .padding(.horizontal, compact ? 20 : 24)
+                .padding(.vertical, compact ? 9 : 16)
+                .frame(minHeight: compact ? 42 : 52)
                 .background(surface)
                 .overlay {
                     LinearGradient(colors: [.white.opacity(pressed ? 0 : hovered ? 0.16 : 0.07), .clear],
