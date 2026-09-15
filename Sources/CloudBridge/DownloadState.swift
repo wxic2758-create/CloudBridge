@@ -192,6 +192,23 @@ struct DownloadTask: Identifiable, Equatable, Codable {
         status = .downloading
     }
 
+    mutating func prepareForRetry() -> Bool {
+        switch status {
+        case .cancelled, .failed:
+            status = .queued
+            destination = nil
+            progress = nil
+            bytesTransferred = nil
+            totalBytes = nil
+            speedBytesPerSecond = nil
+            estimatedRemainingSeconds = nil
+            completedAt = nil
+            return true
+        case .queued, .downloading, .paused, .completed:
+            return false
+        }
+    }
+
     mutating func finish(status: Status, destination: URL? = nil) {
         let canFinish = self.status == .downloading || self.status == .paused ||
             (self.status == .queued && (status == .cancelled || status.isFailure))

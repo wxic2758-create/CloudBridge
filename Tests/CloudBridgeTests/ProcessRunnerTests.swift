@@ -793,7 +793,9 @@ final class ServerNavigationTests: XCTestCase {
             remoteSize: 128,
             status: .downloading
         )
+        cancelled.apply(DownloadProgress(bytesTransferred: 64, totalBytes: 128, speedBytesPerSecond: 10, estimatedRemainingSeconds: 6.4))
         cancelled.finish(status: .cancelled)
+        let originalTaskID = cancelled.id
         let model = BrowserModel(initialServers: [server], initialDownloadTasks: [cancelled])
         model.isConnected = true
         model.isDownloading = true
@@ -801,10 +803,12 @@ final class ServerNavigationTests: XCTestCase {
         XCTAssertTrue(model.canRetry(cancelled))
         model.retry(cancelled)
 
-        XCTAssertEqual(model.downloadTasks.count, 2)
+        XCTAssertEqual(model.downloadTasks.count, 1)
+        XCTAssertEqual(model.downloadTasks[0].id, originalTaskID)
         XCTAssertEqual(model.downloadTasks[0].status, .queued)
-        XCTAssertEqual(model.downloadTasks[0].remoteSize, 128)
-        XCTAssertEqual(model.downloadTasks[1].status, .cancelled)
+        XCTAssertNil(model.downloadTasks[0].progress)
+        XCTAssertNil(model.downloadTasks[0].bytesTransferred)
+        XCTAssertNil(model.downloadTasks[0].completedAt)
     }
 
     func testClearDownloadHistoryPreservesActiveQueue() {

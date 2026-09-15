@@ -644,6 +644,9 @@ final class BrowserModel {
 
         guard canRetry(task) else { return }
 
+        guard let index = downloadTasks.firstIndex(where: { $0.id == task.id }),
+              downloadTasks[index].prepareForRetry() else { return }
+
         let item = RemoteItem(
             id: task.remotePath,
             name: task.itemName,
@@ -652,7 +655,12 @@ final class BrowserModel {
             size: task.remoteSize,
             modifiedAt: task.remoteModifiedAt
         )
-        download(item)
+        downloadQueue.append(QueuedDownload(item: item, taskID: task.id))
+        lastEnqueuedDownloadTaskID = task.id
+        DownloadHistoryStore.save(downloadTasks)
+
+        guard !isDownloading else { return }
+        runDownloadQueue()
     }
 
     func chooseLocalDirectory() {
