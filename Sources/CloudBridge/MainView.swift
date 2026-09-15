@@ -526,13 +526,7 @@ struct MainView: View {
             Spacer(minLength: 16)
             switch task.status {
             case .queued:
-                Text(downloadProgressText(task))
-                    .font(.body.weight(.semibold))
-                    .monospacedDigit()
-                    .frame(width: 52, alignment: .trailing)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(copy("tasks.progress"))
-                .accessibilityValue(downloadProgressText(task))
+                downloadProgress(for: task)
                 Button { model.cancelDownload(task) } label: {
                     Image(systemName: "xmark.circle").frame(width: 28, height: 28)
                 }
@@ -618,12 +612,26 @@ struct MainView: View {
     }
 
     private func downloadProgress(for task: DownloadTask) -> some View {
-        Text(downloadProgressText(task))
-            .font(.body.weight(.semibold))
-            .monospacedDigit()
-            .frame(width: 52, alignment: .trailing)
+        let awaitingFirstByte = task.status == .downloading && (task.bytesTransferred ?? 0) == 0
+        return HStack(spacing: 4) {
+            Group {
+                if awaitingFirstByte {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Color.clear
+                }
+            }
+            .frame(width: 14, height: 14)
+            .accessibilityHidden(true)
+
+            Text(downloadProgressText(task))
+                .font(.body.weight(.semibold))
+                .monospacedDigit()
+                .frame(width: 52, alignment: .trailing)
+        }
+            .frame(width: 70, alignment: .trailing)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(copy("tasks.progress"))
+            .accessibilityLabel(copy(awaitingFirstByte ? "tasks.transferring" : "tasks.progress"))
             .accessibilityValue(downloadProgressText(task))
     }
 
