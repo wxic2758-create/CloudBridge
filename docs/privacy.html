@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CloudBridge Privacy Policy</title>
+  <meta name="description" content="CloudBridge privacy policy for the macOS SFTP and SSH file manager.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    body {
+      margin: 0;
+      color: CanvasText;
+      background: Canvas;
+    }
+    main {
+      width: min(760px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+    h1 {
+      font-size: 34px;
+      line-height: 1.15;
+      margin: 0 0 8px;
+    }
+    h2 {
+      font-size: 20px;
+      margin: 32px 0 8px;
+    }
+    p, li {
+      font-size: 16px;
+    }
+    .muted {
+      color: color-mix(in srgb, CanvasText 62%, Canvas);
+    }
+    a {
+      color: #0a66c2;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CloudBridge Privacy Policy</h1>
+    <p class="muted">Last updated: September 7, 2026</p>
+
+    <p>CloudBridge is a macOS SFTP client that lets users connect to servers they provide and control.</p>
+
+    <h2>Data Collection</h2>
+    <p>CloudBridge does not collect personal data for the developer. Connections to user-selected servers are described below.</p>
+    <p>The app does not use advertising SDKs, analytics SDKs, tracking SDKs, or a developer-operated backend service.</p>
+
+    <h2>Server Connection Information</h2>
+    <p>Users may enter server connection details, including:</p>
+    <ul>
+      <li>Server IP address or host name</li>
+      <li>Port</li>
+      <li>Username</li>
+      <li>Password entered in the password field</li>
+      <li>Remote path</li>
+    </ul>
+    <p>These details are used only to connect to the server chosen by the user.</p>
+    <p>Server configurations and passwords entered in the password field are saved locally in the app's settings on your Mac. CloudBridge does not access macOS Keychain.</p>
+    <p>Credentials are used for password authentication to the SSH/SFTP server you select, not sent to the developer or CloudBridge services. The password is sent only to that server through SSH.</p>
+    <p>To remove a saved credential, disconnect, edit the server, clear the password field, and save. Deleting a server removes its locally saved configuration and credential.</p>
+
+    <h2>File Content</h2>
+    <p>CloudBridge can browse, preview, and download files from servers selected by the user. File content is transferred directly between the user's Mac and the user-specified server. The developer does not receive, store, or process file contents.</p>
+    <p>CloudBridge stores completed download metadata locally on the user's Mac, including the server identifier, remote path, and local destination. This history is used to show completed transfers and local-copy status. Repeated downloads are saved with a unique local filename so an existing file is not overwritten. The history can be removed with Clear Download History and is never sent to the developer.</p>
+
+    <h2>Network Access</h2>
+    <p>CloudBridge uses network access only to connect to user-provided SSH/SFTP servers.</p>
+
+    <h2>Changes</h2>
+    <p>This privacy policy may be updated when CloudBridge changes its data practices. If future versions add analytics, crash reporting, syncing, accounts, or other data collection, this policy and App Store privacy information will be updated before release.</p>
+
+    <h2>Contact</h2>
+    <p>For privacy questions, use the support contact listed on the App Store product page.</p>
+  </main>
+</body>
+</html>
