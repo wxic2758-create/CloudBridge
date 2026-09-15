@@ -196,12 +196,12 @@ struct MainView: View {
                                     .font(.caption2.weight(.semibold))
                                     .monospacedDigit()
                                     .foregroundStyle(Finish.lilac)
-                                    .frame(width: 22, height: 18)
+                                    .frame(width: 18, height: 16)
                                     .background(Finish.lilac.opacity(0.14), in: Capsule())
                                     .opacity(model.activeDownloadCount > 0 ? 1 : 0)
                                     .accessibilityHidden(model.activeDownloadCount == 0)
                                     .frame(maxWidth: .infinity, alignment: .trailing)
-                                    .padding(.trailing, 8)
+                                    .padding(.trailing, 4)
                             }
                         }
                         .font(.system(size: 13, weight: .medium))
