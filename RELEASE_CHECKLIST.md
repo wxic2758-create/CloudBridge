@@ -4,7 +4,7 @@
 
 - Bundle identifier: `com.dazhang.CloudBridge`
 - Marketing version: `1.0`
-- Build number: `16`
+- Build number: `17`
 - Minimum macOS version: `14.0`
 - Category: Productivity
 - App icon source: `Assets/IconComposer/CloudBridge-Purple.icon`
@@ -180,3 +180,20 @@ Prepared `CloudBridge 1.0 (16)` as the first public release candidate:
 - The installer package is signed with the team's 3rd Party Mac Developer Installer
   certificate. Package SHA-256:
   `d90fec23a208aa64f877e33118ea81973ac613c1dd6aeb176f3734a3ddedf737`.
+
+## App Store build 17 — 2026-09-15
+
+Uploaded `CloudBridge 1.0 (17)` after the download-task interaction and initial
+large-file progress improvements:
+
+- `bash scripts/release-gate.sh` passed, including 58 SwiftPM tests, Xcode unit
+  tests, localization parity for 36 locales, and the universal Release build.
+- Signed archive: `build/release/CloudBridge-1.0-17.xcarchive`.
+- Exported package: `build/release/CloudBridge-1.0-17-export/CloudBridge.pkg`.
+- The package contains an Apple Distribution-signed universal app for team
+  `U9UPA9QQ7Y`, bundle ID `com.dazhang.CloudBridge`, version `1.0 (17)`, with
+  the expected sandbox entitlements, privacy manifest, and exempt-encryption declaration.
+- Package SHA-256:
+  `ed1e75ce0f02d7d6e38315a848ef232cd077f13acdb44a899151513202179faf`.
+- Transporter delivered the build to App Store Connect at 16:44 CST. App Store
+  ID: `6787467520`. Apple reports the build as processing.
