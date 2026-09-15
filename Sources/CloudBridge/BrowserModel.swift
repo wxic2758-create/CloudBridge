@@ -737,6 +737,17 @@ final class BrowserModel {
         DownloadHistoryStore.save(downloadTasks)
     }
 
+    func removeDownloadRecord(_ task: DownloadTask) {
+        guard let index = downloadTasks.firstIndex(where: { $0.id == task.id }) else { return }
+        switch downloadTasks[index].status {
+        case .completed, .cancelled, .failed:
+            downloadTasks.remove(at: index)
+            DownloadHistoryStore.save(downloadTasks)
+        case .queued, .downloading, .paused:
+            return
+        }
+    }
+
     private func updateTask(_ id: DownloadTask.ID, progress: DownloadProgress) {
         guard let index = downloadTasks.firstIndex(where: { $0.id == id }) else { return }
         downloadTasks[index].apply(progress)

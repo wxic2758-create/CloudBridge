@@ -580,10 +580,13 @@ struct MainView: View {
                     .help(copy("action.reveal"))
                     .accessibilityLabel(copy("action.reveal"))
             case .cancelled:
-                Image(systemName: "xmark.circle")
+                Button { model.removeDownloadRecord(task) } label: {
+                    Image(systemName: "xmark.circle").frame(width: 28, height: 28)
+                }
+                    .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
-                    .help(copy("tasks.cancelled"))
-                    .accessibilityLabel(copy("tasks.cancelled"))
+                    .help(copy("action.clear"))
+                    .accessibilityLabel(copy("action.clear"))
                 Button { model.retry(task) } label: {
                     Image(systemName: "arrow.clockwise").frame(width: 28, height: 28)
                 }

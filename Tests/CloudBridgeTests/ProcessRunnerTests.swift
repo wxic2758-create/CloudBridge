@@ -824,6 +824,20 @@ final class ServerNavigationTests: XCTestCase {
         XCTAssertFalse(model.hasDownloadHistory)
     }
 
+    func testRemoveDownloadRecordOnlyRemovesTerminalTask() {
+        let model = BrowserModel(initialServers: [])
+        let active = DownloadTask(itemName: "active", remotePath: "/active", serverName: "test", isDirectory: false)
+        var cancelled = DownloadTask(itemName: "cancelled", remotePath: "/cancelled", serverName: "test", isDirectory: false)
+        cancelled.finish(status: .cancelled)
+        model.downloadTasks = [active, cancelled]
+
+        model.removeDownloadRecord(active)
+        XCTAssertEqual(model.downloadTasks.map(\.itemName), ["active", "cancelled"])
+
+        model.removeDownloadRecord(cancelled)
+        XCTAssertEqual(model.downloadTasks.map(\.itemName), ["active"])
+    }
+
     func testDownloadsCanBeQueuedWhileAnotherDownloadIsActive() {
         let server = SavedServer(host: "example.invalid", username: "root", password: "secret")
         let model = BrowserModel(initialServers: [server])
