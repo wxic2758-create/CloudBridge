@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT_DIR/CloudBridge.xcodeproj"
 SCHEME="CloudBridge"
-EXPECTED_VERSION="0.1.0"
-EXPECTED_BUILD="13"
+EXPECTED_VERSION="1.0"
+EXPECTED_BUILD="16"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cloudbridge-release-gate.XXXXXX")"
 DERIVED_DATA="$WORK_DIR/DerivedData"
 RESULT_BUNDLE="$WORK_DIR/CloudBridgeTests.xcresult"
@@ -53,8 +53,8 @@ grep -q 'BlueprintName = "CloudBridgeTests"' "$PROJECT/xcshareddata/xcschemes/$S
 grep -q 'productType = "com.apple.product-type.bundle.unit-test"' "$PROJECT/project.pbxproj" || fail "Xcode project has no unit-test target"
 [[ "$(setting_values MARKETING_VERSION)" == "$EXPECTED_VERSION" ]] || fail "MARKETING_VERSION is not consistently $EXPECTED_VERSION"
 [[ "$(setting_values CURRENT_PROJECT_VERSION)" == "$EXPECTED_BUILD" ]] || fail "CURRENT_PROJECT_VERSION is not consistently $EXPECTED_BUILD"
-grep -q 'APP_VERSION="${APP_VERSION:-0.1.0}"' build-app.sh || fail "build-app.sh version does not match $EXPECTED_VERSION"
-grep -q 'BUILD_NUMBER="${BUILD_NUMBER:-13}"' build-app.sh || fail "build-app.sh build does not match $EXPECTED_BUILD"
+grep -q 'APP_VERSION="${APP_VERSION:-1.0}"' build-app.sh || fail "build-app.sh version does not match $EXPECTED_VERSION"
+grep -q 'BUILD_NUMBER="${BUILD_NUMBER:-16}"' build-app.sh || fail "build-app.sh build does not match $EXPECTED_BUILD"
 python3 scripts/check-localization.py
 
 if ! command -v xcodebuild >/dev/null 2>&1 || ! xcodebuild -version >/dev/null 2>&1; then
@@ -111,7 +111,9 @@ locale_count="$(find "$APP/Contents/Resources" -maxdepth 1 -type d -name '*.lpro
 
 bundle_version="$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")"
 bundle_build="$(plutil -extract CFBundleVersion raw -o - "$APP/Contents/Info.plist")"
+uses_non_exempt_encryption="$(plutil -extract ITSAppUsesNonExemptEncryption raw -o - "$APP/Contents/Info.plist")"
 [[ "$bundle_version" == "$EXPECTED_VERSION" ]] || fail "built app version is $bundle_version, expected $EXPECTED_VERSION"
 [[ "$bundle_build" == "$EXPECTED_BUILD" ]] || fail "built app build is $bundle_build, expected $EXPECTED_BUILD"
+[[ "$uses_non_exempt_encryption" == "false" ]] || fail "ITSAppUsesNonExemptEncryption is not false"
 
 printf '\nRelease gate passed. Signing, archive, export, ASC upload, and GUI validation were intentionally not run.\n'

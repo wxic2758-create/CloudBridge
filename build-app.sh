@@ -5,8 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="${APP_NAME:-CloudBridge}"
 BUNDLE_ID="${BUNDLE_ID:-com.dazhang.CloudBridge}"
-APP_VERSION="${APP_VERSION:-0.1.0}"
-BUILD_NUMBER="${BUILD_NUMBER:-13}"
+APP_VERSION="${APP_VERSION:-1.0}"
+BUILD_NUMBER="${BUILD_NUMBER:-16}"
 APP_CATEGORY="${APP_CATEGORY:-public.app-category.productivity}"
 APP_SIGN_IDENTITY="${APP_SIGN_IDENTITY:--}"
 INSTALLER_SIGN_IDENTITY="${INSTALLER_SIGN_IDENTITY:-}"
@@ -82,6 +82,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <string>Copyright © 2026 CloudBridge. All rights reserved.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>
 PLIST

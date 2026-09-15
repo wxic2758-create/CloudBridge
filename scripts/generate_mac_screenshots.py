@@ -10,7 +10,7 @@ Each screenshot:
 
 import argparse
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 
 # Brand colors (from codebase: sRGB 0.56, 0.65, 1.0 in dark mode)
@@ -19,6 +19,11 @@ BG_DARK    = (18, 20, 30)         # deep navy-black
 BG_MID     = (28, 32, 48)         # slightly lighter for gradient
 WINDOW_BG  = (30, 33, 48)         # macOS window bg
 TITLEBAR   = (45, 49, 66)         # titlebar color
+BRAND_PURPLE = (97, 56, 184)      # light-mode app accent
+BG_LIGHT_TOP = (250, 249, 253)
+BG_LIGHT_BOTTOM = (232, 227, 247)
+WINDOW_LIGHT = (255, 255, 255)
+TITLEBAR_LIGHT = (246, 244, 250)
 
 SF_BLACK = "/Library/Fonts/SF-Pro-Display-Black.otf"
 SF_BOLD  = "/Library/Fonts/SF-Pro-Display-Bold.otf"
@@ -40,7 +45,7 @@ def draw_gradient(draw, w, h, top_color, bottom_color):
         draw.line([(0, y), (w, y)], fill=(r, g, b))
 
 
-def draw_mac_window(draw, x, y, w, h, titlebar_text=""):
+def draw_mac_window(draw, x, y, w, h, titlebar_text="", *, window_bg=WINDOW_BG, titlebar=TITLEBAR, title_color=(180, 180, 190)):
     """Draw a macOS-style window frame."""
     # Window shadow
     shadow = Image.new("RGBA", (w + 40, h + 40), (0, 0, 0, 0))
@@ -49,11 +54,12 @@ def draw_mac_window(draw, x, y, w, h, titlebar_text=""):
     # We'll composite later; for now just draw the window itself
 
     # Window background
-    draw.rounded_rectangle([x, y, x + w - 1, y + h - 1], radius=12, fill=WINDOW_BG)
+    draw.rounded_rectangle([x + 10, y + 18, x + w + 9, y + h + 17], radius=22, fill=(213, 207, 227))
+    draw.rounded_rectangle([x, y, x + w - 1, y + h - 1], radius=18, fill=window_bg)
     # Titlebar
-    draw.rounded_rectangle([x, y, x + w - 1, y + 50 - 1], radius=12, fill=TITLEBAR)
+    draw.rounded_rectangle([x, y, x + w - 1, y + 50 - 1], radius=18, fill=titlebar)
     # Remove bottom part of titlebar that overlaps window body
-    draw.rectangle([x, y + 38, x + w - 1, y + 50], fill=WINDOW_BG)
+    draw.rectangle([x, y + 38, x + w - 1, y + 50], fill=window_bg)
 
     # Traffic lights
     cx = x + 24
@@ -70,7 +76,7 @@ def draw_mac_window(draw, x, y, w, h, titlebar_text=""):
             tw = bbox[2] - bbox[0]
             tx = x + (w - tw) // 2
             ty = y + 18
-            draw.text((tx, ty), titlebar_text, fill=(180, 180, 190), font=tf)
+            draw.text((tx, ty), titlebar_text, fill=title_color, font=tf)
         except Exception:
             pass
 
@@ -84,12 +90,23 @@ def main():
     parser.add_argument("--window-title", default="CloudBridge")
     parser.add_argument("--canvas-w", type=int, default=2880)
     parser.add_argument("--canvas-h", type=int, default=1800)
+    parser.add_argument("--light", action="store_true", help="Use the bright CloudBridge marketing palette")
+    parser.add_argument("--crop-top", type=int, default=0, help="Remove capture-only pixels from the source top edge")
+    parser.add_argument("--source-has-frame", action="store_true", help="Place an already-framed macOS window without drawing another frame")
     args = parser.parse_args()
 
+    brand = BRAND_PURPLE if args.light else BRAND_BLUE
+    bg_top = BG_LIGHT_TOP if args.light else BG_DARK
+    bg_bottom = BG_LIGHT_BOTTOM if args.light else BG_MID
+    window_bg = WINDOW_LIGHT if args.light else WINDOW_BG
+    titlebar = TITLEBAR_LIGHT if args.light else TITLEBAR
+    headline_color = (35, 27, 52) if args.light else (255, 255, 255)
+    title_color = (96, 88, 112) if args.light else (180, 180, 190)
+
     # Build canvas
-    canvas = Image.new("RGB", (args.canvas_w, args.canvas_h), BG_DARK)
+    canvas = Image.new("RGB", (args.canvas_w, args.canvas_h), bg_top)
     draw = ImageDraw.Draw(canvas)
-    draw_gradient(draw, args.canvas_w, args.canvas_h, BG_DARK, BG_MID)
+    draw_gradient(draw, args.canvas_w, args.canvas_h, bg_top, bg_bottom)
 
     # Subtle brand glow behind window
     glow = Image.new("RGBA", (args.canvas_w, args.canvas_h), (0, 0, 0, 0))
@@ -97,7 +114,7 @@ def main():
     # Soft blue glow in center area
     for r in range(900, 0, -10):
         alpha = int(18 * (1 - r / 900))
-        gd.ellipse([1440 - r, 1000 - r, 1440 + r, 1000 + r], fill=(BRAND_BLUE[0], BRAND_BLUE[1], BRAND_BLUE[2], alpha))
+        gd.ellipse([1440 - r, 1000 - r, 1440 + r, 1000 + r], fill=(brand[0], brand[1], brand[2], alpha))
     canvas = Image.alpha_composite(canvas.convert("RGBA"), glow).convert("RGB")
     draw = ImageDraw.Draw(canvas)
 
@@ -106,11 +123,10 @@ def main():
     desc_font = font(SF_BOLD, 52)
 
     # Measure verb
-    v_bbox = draw.textbbox((0, 0), args.verb.upper(), font=verb_font)
-    v_w = v_bbox[2] - v_bbox[0]
-    vx = (args.canvas_w - v_w) // 2
+    v_bbox = draw.textbbox((0, 0), args.verb, font=verb_font)
+    vx = args.canvas_w // 2
     vy = 80
-    draw.text((vx, vy), args.verb.upper(), fill=(255, 255, 255), font=verb_font)
+    draw.text((vx, vy), args.verb, fill=headline_color, font=verb_font, anchor="ma")
 
     # Measure and wrap desc
     max_desc_w = int(args.canvas_w * 0.65)
@@ -132,52 +148,58 @@ def main():
     if not lines:
         lines = [args.desc]
 
-    dy = vy + (v_bbox[3] - v_bbox[1]) + 24
+    dy = vy + v_bbox[3] + 32
     for line in lines:
         db = draw.textbbox((0, 0), line, font=desc_font)
-        dw = db[2] - db[0]
-        dx = (args.canvas_w - dw) // 2
-        draw.text((dx, dy), line, fill=BRAND_BLUE, font=desc_font)
+        draw.text((args.canvas_w // 2, dy), line, fill=brand, font=desc_font, anchor="ma")
         dy += (db[3] - db[1]) + 12
 
     # Source screenshot
     src = Image.open(args.screenshot).convert("RGB")
+    if args.crop_top > 0:
+        src = src.crop((0, min(args.crop_top, src.height - 1), src.width, src.height))
     sw, sh = src.size
 
     # Window area: below text, centered
     window_top = dy + 60
-    window_w = int(args.canvas_w * 0.82)
-    window_h = int((args.canvas_h - window_top - 40) * 0.92)
+    max_content_w = int(args.canvas_w * 0.82) - 32
+    max_content_h = int((args.canvas_h - window_top - 40) * 0.94) - 64
+    scale = min(max_content_w / sw, max_content_h / sh)
+    content_w = int(sw * scale)
+    content_h = int(sh * scale)
+    window_w = content_w + (0 if args.source_has_frame else 32)
+    window_h = content_h + (0 if args.source_has_frame else 64)
     window_x = (args.canvas_w - window_w) // 2
     window_y = window_top + 20
 
-    draw_mac_window(draw, window_x, window_y, window_w, window_h, args.window_title)
+    if args.source_has_frame:
+        shadow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        shadow_draw = ImageDraw.Draw(shadow)
+        shadow_draw.rounded_rectangle(
+            [window_x + 8, window_y + 14, window_x + window_w + 7, window_y + window_h + 13],
+            radius=34,
+            fill=(63, 39, 105, 42),
+        )
+        shadow = shadow.filter(ImageFilter.GaussianBlur(26))
+        canvas = Image.alpha_composite(canvas.convert("RGBA"), shadow).convert("RGB")
+        src_resized = src.resize((content_w, content_h), Image.Resampling.LANCZOS)
+        mask = Image.new("L", (content_w, content_h), 0)
+        ImageDraw.Draw(mask).rounded_rectangle(
+            [0, 0, content_w - 1, content_h - 1], radius=max(18, int(content_w * 0.018)), fill=255
+        )
+        canvas.paste(src_resized, (window_x, window_y), mask)
+    else:
+        draw_mac_window(draw, window_x, window_y, window_w, window_h, args.window_title,
+                        window_bg=window_bg, titlebar=titlebar, title_color=title_color)
 
     # Fit screenshot into window content area (below titlebar ~50px)
-    content_x = window_x + 16
-    content_y = window_y + 56
-    content_w = window_w - 32
-    content_h = window_h - 64
-
-    # Resize source to fit content area (cover, center-top)
-    src_ratio = sw / sh
-    cont_ratio = content_w / content_h
-    if src_ratio > cont_ratio:
-        # Source wider — height matches, crop width
-        new_h = content_h
-        new_w = int(new_h * src_ratio)
-        src_resized = src.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        crop_x = (new_w - content_w) // 2
-        src_cropped = src_resized.crop((crop_x, 0, crop_x + content_w, new_h))
-    else:
-        # Source taller — width matches
-        new_w = content_w
-        new_h = int(new_w / src_ratio)
-        src_resized = src.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        crop_y = 0  # top-align
-        src_cropped = src_resized.crop((0, crop_y, new_w, crop_y + content_h))
-
-    canvas.paste(src_cropped, (content_x, content_y))
+    if not args.source_has_frame:
+        content_x = window_x + 16
+        content_y = window_y + 56
+        content_w = window_w - 32
+        content_h = window_h - 64
+        src_resized = src.resize((content_w, content_h), Image.Resampling.LANCZOS)
+        canvas.paste(src_resized, (content_x, content_y))
 
     # Save
     out = Path(args.output)

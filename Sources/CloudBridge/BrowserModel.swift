@@ -17,7 +17,7 @@ enum BrowserModelError: LocalizedError {
         case .missingUsername:
             AppLanguage.text("error.missingUsername")
         case .missingPassword:
-            AppLanguage.text("error.missingPassword")
+            AppLanguage.text("editor.password")
         case .invalidPort:
             AppLanguage.text("error.invalidPort")
         case .securityScopedAccessRequired(let path):

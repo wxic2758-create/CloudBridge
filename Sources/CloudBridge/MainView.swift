@@ -847,10 +847,6 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 18) {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(copy("settings.credentials")).font(.headline)
-                                Text(copy("settings.credentialsHelp"))
-                            }
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(copy("settings.authentication")).font(.headline)
                                 Text(copy("settings.authenticationHelp"))
                             }
                             Text(copy("settings.previewHelp"))
@@ -895,7 +891,7 @@ private struct ConnectionEditor: View {
                                     .textFieldStyle(.plain)
                             }
                             Divider().padding(.leading, 38)
-                            editorTextRow(icon: "key", title: copy("editor.secret")) {
+                            editorTextRow(icon: "key", title: copy("editor.password")) {
                                 HStack(spacing: 8) {
                                     Group {
                                         if passwordVisible {
@@ -959,32 +955,6 @@ private struct ConnectionEditor: View {
                                     TextField("", text: $model.editingServer.defaultRemotePath)
                                         .textFieldStyle(.plain)
                                 }
-                                Divider().padding(.leading, 38)
-                                HStack(spacing: 12) {
-                                    Image(systemName: "doc.badge.key")
-                                        .symbolRenderingMode(.monochrome)
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 24, height: 30)
-                                    Text(copy("editor.key")).font(.body)
-                                        .lineLimit(1)
-                                    Spacer(minLength: 16)
-                                    Text(model.editingServer.privateKeyPath ?? copy("editor.noKey"))
-                                        .foregroundStyle(model.editingServer.privateKeyPath == nil ? .secondary : .primary)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                    Button {
-                                        model.choosePrivateKey()
-                                    } label: {
-                                        Label(copy("action.choose"), systemImage: "folder")
-                                    }
-                                    .buttonStyle(.bordered)
-                                    if model.editingServer.privateKeyPath != nil {
-                                        Button(copy("action.clear"), action: model.clearPrivateKey)
-                                            .buttonStyle(.borderless)
-                                    }
-                                }
-                                .padding(.vertical, 9)
                             }
                         }
                     }

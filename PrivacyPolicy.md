@@ -17,15 +17,14 @@ Users may enter server connection details, including:
 - Server IP address or host name
 - Port
 - Username
-- Password or private-key passphrase entered in the password field
-- Private-key file path
+- Password entered in the password field
 - Remote path
 
 These details are used only to connect to the server chosen by the user.
 
-Server configurations, passwords, and any private-key passphrases entered in the password field are saved locally in the app's settings on your Mac. CloudBridge does not access macOS Keychain.
+Server configurations and passwords entered in the password field are saved locally in the app's settings on your Mac. CloudBridge does not access macOS Keychain.
 
-Credentials are used for authentication to the SSH/SFTP server you select, not sent to the developer or CloudBridge services. Password authentication sends the password to that server through SSH; the local SSH tools also use the password field to answer private-key passphrase prompts.
+Credentials are used for password authentication to the SSH/SFTP server you select, not sent to the developer or CloudBridge services. The password is sent only to that server through SSH.
 
 To remove a saved credential, disconnect, edit the server, clear the password field, and save. Deleting a server removes its locally saved configuration and credential.
 
@@ -33,7 +32,7 @@ To remove a saved credential, disconnect, edit the server, clear the password fi
 
 CloudBridge can browse, preview, and download files from servers selected by the user. File content is transferred directly between the user's Mac and the user-specified server. The developer does not receive, store, or process file contents.
 
-CloudBridge stores completed download metadata locally on the user's Mac, including the server identifier, remote path, and local destination. This history is used to show completed transfers and warn before downloading the same item again. It can be removed with Clear Download History and is never sent to the developer.
+CloudBridge stores completed download metadata locally on the user's Mac, including the server identifier, remote path, and local destination. This history is used to show completed transfers and local-copy status. Repeated downloads are saved with a unique local filename so an existing file is not overwritten. The history can be removed with Clear Download History and is never sent to the developer.
 
 ## Network Access
 
