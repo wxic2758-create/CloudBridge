@@ -1,0 +1,8 @@
+{
+  "locale": "hr",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH upravitelj datoteka",
+  "promotionalText": "Povežite SSH/SFTP poslužitelje, pregledajte udaljene datoteke, otvorite ih u Quick Looku i preuzmite datoteke ili mape izravno na Mac.",
+  "keywords": "poslužitelj,datoteke,preuzimanje,klijent,vps,nas,upravljanje,pohrana",
+  "description": "CloudBridge je SFTP klijent i SSH upravitelj udaljenih datoteka za Mac. Povežite se sa svojim poslužiteljima, pregledavajte i pretražujte udaljene mape, pregledajte datoteke pomoću macOS Quick Looka te preuzmite datoteke ili mape izravno na Mac.\n\nZNAČAJKE\n\n• SSH/SFTP veza lozinkom\n• Pregledavanje i pretraživanje udaljenih mapa\n• Pregled datoteka u Quick Looku\n• Preuzimanje datoteka i mapa\n• Pauziranje, nastavak, otkazivanje i ponavljanje preuzimanja\n• Prikaz završenih preuzimanja u Finderu\n\nPRIVATNOST\n\nCloudBridge ne zahtijeva račun i ne sadrži oglase, analitičke ili tracking SDK-ove niti posrednički poslužitelj razvojnog programera. Veze idu izravno s Maca na odabrani poslužitelj. Spremljene lozinke zaštićene su u macOS privjesku ključeva.\n\nZa razvojne programere, administratore sustava i VPS/NAS korisnike. Zahtijeva macOS 14 ili noviji."
+}

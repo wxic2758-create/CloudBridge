@@ -21,6 +21,8 @@
 		500000000000000000000002 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000012 /* AppLanguage.swift */; };
 		600000000000000000000003 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000000000000000000004 /* MainView.swift */; };
 		700000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 700000000000000000000002 /* PrivacyInfo.xcprivacy */; };
+		800000000000000000000001 /* ServerPasswordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 800000000000000000000002 /* ServerPasswordStore.swift */; };
+		800000000000000000000003 /* FileTypeIconResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 800000000000000000000004 /* FileTypeIconResolver.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +53,8 @@
 		500000000000000000000012 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		600000000000000000000004 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		700000000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		800000000000000000000002 /* ServerPasswordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerPasswordStore.swift; sourceTree = "<group>"; };
+		800000000000000000000004 /* FileTypeIconResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTypeIconResolver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXTargetDependency section */
@@ -89,7 +93,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
@@ -108,7 +112,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
@@ -170,6 +174,8 @@
 				100000000000000000000016 /* SFTPClient.swift */,
 				100000000000000000000018 /* ServerProfile.swift */,
 				300000000000000000000004 /* ProcessRunner.swift */,
+				800000000000000000000002 /* ServerPasswordStore.swift */,
+				800000000000000000000004 /* FileTypeIconResolver.swift */,
 			);
 			path = CloudBridge;
 			sourceTree = "<group>";
@@ -332,6 +338,8 @@
 				100000000000000000000006 /* SFTPClient.swift in Sources */,
 				100000000000000000000008 /* ServerProfile.swift in Sources */,
 				300000000000000000000003 /* ProcessRunner.swift in Sources */,
+				800000000000000000000001 /* ServerPasswordStore.swift in Sources */,
+				800000000000000000000003 /* FileTypeIconResolver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -457,14 +465,15 @@
 				CODE_SIGN_ENTITLEMENTS = CloudBridge.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_APP_SANDBOX = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "CloudBridge: SFTP Transfer";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "CloudBridge uses your local network only when you connect to an SSH/SFTP server on your local network.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 CloudBridge. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -485,14 +494,15 @@
 				CODE_SIGN_ENTITLEMENTS = CloudBridge.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = U9UPA9QQ7Y;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_APP_SANDBOX = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "CloudBridge: SFTP Transfer";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "CloudBridge uses your local network only when you connect to an SSH/SFTP server on your local network.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 CloudBridge. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

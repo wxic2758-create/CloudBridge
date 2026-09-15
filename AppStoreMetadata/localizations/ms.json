@@ -1,0 +1,8 @@
+{
+  "locale": "ms",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "Pengurus Fail SSH Jarak Jauh",
+  "promotionalText": "Sambung ke pelayan SSH/SFTP, semak imbas fail jauh, pratonton dengan Quick Look dan muat turun fail atau folder terus ke Mac. Tanpa akaun atau penjejakan.",
+  "keywords": "pelayan,fail,muat turun,klien,vps,nas,pentadbir,storan,folder",
+  "description": "CloudBridge ialah klien SFTP dan pengurus fail SSH jarak jauh untuk Mac. Sambung ke pelayan anda sendiri, semak imbas dan cari folder jauh, pratonton fail dengan macOS Quick Look dan muat turun fail atau folder terus ke Mac.\n\nCIRI\n\n• Sambungan SSH/SFTP dengan kata laluan\n• Semak imbas dan cari folder jauh\n• Pratonton dengan Quick Look\n• Muat turun fail dan folder\n• Jeda, sambung, batal dan cuba semula muat turun\n• Paparkan muat turun selesai dalam Finder\n\nPRIVASI\n\nCloudBridge tidak memerlukan akaun dan tidak mengandungi iklan, SDK analitik atau penjejakan, atau pelayan perantara pembangun. Sambungan berlaku terus dari Mac ke pelayan yang dipilih. Kata laluan pelayan yang disimpan dilindungi dalam macOS Keychain.\n\nUntuk pembangun, pentadbir sistem dan pengguna VPS/NAS. Memerlukan macOS 14 atau lebih baharu."
+}

@@ -104,12 +104,13 @@
 "settings.configuration" = "Server configurations";
 "settings.configurationHelp" = "Server names, addresses, ports, usernames and private-key paths are saved in this Mac’s app preferences.";
 "settings.credentials" = "Saved passwords";
-"settings.credentialsHelp" = "Server passwords or private-key passphrases are stored with the app's local server settings on this Mac. CloudBridge does not access macOS Keychain.";
+"settings.credentialsHelp" = "Server passwords are stored securely in macOS Keychain and retrieved locally when CloudBridge connects.";
 "settings.authentication" = "Connecting to your server";
 "settings.authenticationHelp" = "Credentials are used to authenticate with the server you choose. CloudBridge does not send them to a CloudBridge account or cloud service.";
 "settings.privacy" = "Privacy and credentials";
 "settings.privacyPolicy" = "Privacy Policy";
 "settings.privacyPolicyHint" = "Opens the CloudBridge privacy policy in your default browser.";
+"settings.support" = "Support";
 "settings.hostIdentity" = "Server identity";
 "settings.hostIdentityHelp" = "Verify the SSH fingerprint with your administrator on first connection. A changed saved fingerprint blocks the connection.";
 "settings.preview" = "Native Quick Look";
@@ -156,8 +157,11 @@
 "editor.advanced" = "Advanced options";
 "editor.optionalName" = "Optional — uses the server address";
 "credentials.unlockReason" = "Authorize CloudBridge to read the saved password for this connection.";
-"credentials.readFailed" = "Unable to access the saved password. Try connecting again or update the password.";
-"credentials.keepHelp" = "Edit the saved password, or clear the field to remove it.";
+"credentials.readFailed" = "Unable to access the saved password. Try connecting again or change the saved password.";
+"credentials.keepHelp" = "A password is already saved in macOS Keychain. Keep it unchanged or choose Change Password.";
+"credentials.savedSecurely" = "Saved securely in macOS Keychain";
+"action.changePassword" = "Change Password";
+"action.removeSavedPassword" = "Remove Saved Password";
 
 "status.connecting" = "Connecting…";
 "status.refreshing" = "Refreshing…";
@@ -179,7 +183,7 @@
 "status.downloadCancelled" = "Download cancelled";
 "status.waitingHostKey" = "Waiting for server identity confirmation";
 "status.hostKeyRejected" = "Server host key not trusted";
-"credentials.remove" = "Remove saved password";
+"credentials.remove" = "Remove Saved Password";
 "error.fingerprintFetch" = "Unable to retrieve the server host key. Check the address, port, and network connection.";
 "error.fingerprintParse" = "Unable to parse the server host key.";
 "error.firstConnection" = "First connection to this server. Please confirm the host key:\n%@  %@";
@@ -205,3 +209,10 @@
 "file.localCopy" = "Local copy available";
 "file.localMissing" = "Downloaded before; local copy removed";
 "file.remoteUpdated" = "Server file has been updated";
+"credentials.savedStatus" = "Saved securely in macOS Keychain";
+"credentials.change" = "Change Password";
+"credentials.removeTitle" = "Remove saved password?";
+"credentials.removeHelp" = "CloudBridge will remove this password from macOS Keychain. You will need to enter a password the next time you connect.";
+"credentials.writeFailed" = "Unable to save the password in macOS Keychain.";
+"credentials.removeFailed" = "Unable to remove the saved password from macOS Keychain.";
+"settings.supportHint" = "Opens CloudBridge support in your default browser.";

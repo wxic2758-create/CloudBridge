@@ -1,0 +1,8 @@
+{
+  "locale": "id",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "Pengelola File SSH Jarak Jauh",
+  "promotionalText": "Hubungkan server SSH/SFTP, jelajahi file jarak jauh, pratinjau dengan Quick Look, lalu unduh file atau folder langsung ke Mac. Tanpa akun atau pelacakan.",
+  "keywords": "server,file,unduh,klien,vps,nas,admin,penyimpanan,folder",
+  "description": "CloudBridge adalah klien SFTP dan pengelola file SSH jarak jauh untuk Mac. Hubungkan ke server milik Anda, jelajahi dan cari folder jarak jauh, pratinjau file dengan macOS Quick Look, lalu unduh file atau folder langsung ke Mac.\n\nFITUR\n\n• Koneksi SSH/SFTP dengan kata sandi\n• Menjelajah dan mencari folder jarak jauh\n• Pratinjau dengan Quick Look\n• Unduh file dan folder\n• Jeda, lanjutkan, batalkan, dan coba ulang unduhan\n• Tampilkan unduhan selesai di Finder\n\nPRIVASI\n\nCloudBridge tidak memerlukan akun serta tidak memiliki iklan, SDK analitik atau pelacakan, maupun server perantara milik pengembang. Koneksi berlangsung langsung dari Mac ke server yang Anda pilih. Kata sandi server yang disimpan dilindungi oleh macOS Keychain.\n\nUntuk developer, administrator sistem, dan pengguna VPS/NAS. Memerlukan macOS 14 atau lebih baru."
+}

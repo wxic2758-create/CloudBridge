@@ -1,0 +1,1 @@
+"NSLocalNetworkUsageDescription" = "A CloudBridge csak akkor használja a helyi hálózatot, amikor a helyi hálózaton lévő SSH/SFTP-szerverhez csatlakozik.";

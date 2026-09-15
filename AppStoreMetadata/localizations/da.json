@@ -1,0 +1,8 @@
+{
+  "locale": "da",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH-filhåndtering",
+  "promotionalText": "Forbind til SSH/SFTP-servere, gennemse eksterne filer, se dem med Quick Look og download filer eller mapper direkte til din Mac. Ingen konto eller sporing.",
+  "keywords": "server,filer,download,klient,vps,nas,admin,lager,mapper",
+  "description": "CloudBridge er en fokuseret SFTP-klient og SSH-filhåndtering til Mac. Opret forbindelse til dine egne servere, gennemse og søg i eksterne mapper, se filer med macOS Quick Look, og download filer eller mapper direkte til din Mac.\n\nFUNKTIONER\n\n• SSH/SFTP-forbindelser med adgangskode\n• Gennemse og søge i eksterne mapper\n• Forhåndsvisning med Quick Look\n• Download af filer og mapper\n• Pause, genoptag, annuller og prøv downloads igen\n• Vis færdige downloads i Finder\n\nPRIVATLIV\n\nCloudBridge kræver ingen konto og indeholder ingen annoncer, analyse- eller sporings-SDK'er eller udviklerdrevet proxyserver. Forbindelser går direkte fra din Mac til den valgte server. Gemte serveradgangskoder beskyttes i macOS-nøglering.\n\nTil udviklere, systemadministratorer og VPS/NAS-brugere. Kræver macOS 14 eller nyere."
+}

@@ -1,0 +1,19 @@
+{
+  "appName": "CloudBridge: SFTP Transfer",
+  "bundleId": "com.dazhang.CloudBridge",
+  "appStoreId": "6787467520",
+  "marketingVersion": "1.0",
+  "targetBuild": "18",
+  "primaryLanguage": "en-US",
+  "primaryCategory": "Developer Tools",
+  "secondaryCategory": "Productivity",
+  "price": "Free",
+  "availability": "All Countries or Regions",
+  "screenshots": "English only",
+  "dataCollection": "None",
+  "futureCommercializationPlanned": true,
+  "marketingURL": "https://wxic2758-create.github.io/CloudBridge/",
+  "supportURL": "https://wxic2758-create.github.io/CloudBridge/support.html",
+  "privacyPolicyURL": "https://wxic2758-create.github.io/CloudBridge/privacy.html"
+}
+

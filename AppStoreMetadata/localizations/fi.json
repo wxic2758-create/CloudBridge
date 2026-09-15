@@ -1,0 +1,8 @@
+{
+  "locale": "fi",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH-etätiedostonhallinta",
+  "promotionalText": "Yhdistä SSH/SFTP-palvelimiin, selaa etätiedostoja, esikatsele Quick Lookilla ja lataa tiedostoja tai kansioita suoraan Macille. Ei tiliä tai seurantaa.",
+  "keywords": "palvelin,tiedostot,lataus,asiakas,vps,nas,hallinta,tallennus,kansiot",
+  "description": "CloudBridge on Macin SFTP-asiakas ja SSH-etätiedostonhallinta. Yhdistä omiin palvelimiisi, selaa ja hae etäkansioita, esikatsele tiedostoja macOS Quick Lookilla ja lataa tiedostoja tai kansioita suoraan Macille.\n\nOMINAISUUDET\n\n• SSH/SFTP-yhteys salasanalla\n• Etäkansioiden selaus ja haku\n• Esikatselu Quick Lookilla\n• Tiedostojen ja kansioiden lataus\n• Latausten keskeytys, jatkaminen, peruutus ja uudelleenyritys\n• Valmiiden latausten näyttäminen Finderissa\n\nTIETOSUOJA\n\nCloudBridge ei vaadi tiliä eikä sisällä mainoksia, analytiikka- tai seuranta-SDK:ita tai kehittäjän välityspalvelinta. Yhteydet kulkevat suoraan Macilta valitulle palvelimelle. Tallennetut salasanat suojataan macOS-avaimenperässä.\n\nKehittäjille, järjestelmänvalvojille ja VPS/NAS-käyttäjille. Vaatii macOS 14:n tai uudemman."
+}

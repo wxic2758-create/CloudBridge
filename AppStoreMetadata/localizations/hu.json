@@ -1,0 +1,8 @@
+{
+  "locale": "hu",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH távoli fájlkezelő",
+  "promotionalText": "Kapcsolódjon SSH/SFTP szerverekhez, böngésszen távoli fájlokat, nézze meg őket Quick Lookkal, és töltsön le fájlokat vagy mappákat közvetlenül a Macre.",
+  "keywords": "szerver,fájlok,letöltés,kliens,vps,nas,kezelés,tárhely,mappák",
+  "description": "A CloudBridge egy Macre készült SFTP-kliens és SSH távoli fájlkezelő. Kapcsolódjon saját szervereihez, böngésszen és keressen a távoli mappákban, tekintse meg a fájlokat macOS Quick Lookkal, és töltsön le fájlokat vagy mappákat közvetlenül a Macre.\n\nFUNKCIÓK\n\n• SSH/SFTP-kapcsolat jelszóval\n• Távoli mappák böngészése és keresése\n• Előnézet Quick Lookkal\n• Fájlok és mappák letöltése\n• Letöltések szüneteltetése, folytatása, megszakítása és újrapróbálása\n• Befejezett letöltések megjelenítése a Finderben\n\nADATVÉDELEM\n\nA CloudBridge nem igényel fiókot, nem tartalmaz reklámot, analitikai vagy követési SDK-t, illetve fejlesztői közvetítő szervert. A kapcsolat közvetlenül a Mac és a kiválasztott szerver között jön létre. A mentett jelszavakat a macOS Kulcskarika védi.\n\nFejlesztőknek, rendszergazdáknak és VPS/NAS felhasználóknak. macOS 14 vagy újabb szükséges."
+}

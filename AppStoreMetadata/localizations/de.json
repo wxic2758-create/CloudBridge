@@ -1,0 +1,8 @@
+{
+  "locale": "de",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH Remote-Dateimanager",
+  "promotionalText": "SSH/SFTP-Server verbinden, entfernte Dateien durchsuchen, mit Quick Look ansehen und Dateien oder Ordner direkt auf den Mac laden. Ohne Konto oder Tracking.",
+  "keywords": "server,dateien,download,client,vps,nas,admin,speicher,verzeichnis",
+  "description": "CloudBridge ist ein fokussierter SFTP-Client und SSH-Dateimanager für den Mac. Verbinde dich mit deinen eigenen Servern, durchsuche entfernte Ordner, zeige Dateien mit macOS Quick Look an und lade Dateien oder ganze Ordner direkt auf deinen Mac.\n\nFUNKTIONEN\n\n• SSH/SFTP-Verbindungen mit Passwort\n• Entfernte Ordner durchsuchen und suchen\n• Dateien mit Quick Look ansehen\n• Dateien und Ordner herunterladen\n• Downloads pausieren, fortsetzen, abbrechen und erneut versuchen\n• Fertige Downloads im Finder anzeigen\n\nDATENSCHUTZ\n\nCloudBridge benötigt kein Konto und enthält keine Werbung, Analyse- oder Tracking-SDKs sowie keinen Entwickler-Proxy. Verbindungen laufen direkt vom Mac zum ausgewählten Server. Gespeicherte Serverpasswörter werden im macOS-Schlüsselbund geschützt.\n\nFür Entwickler, Administratoren sowie VPS- und NAS-Nutzer. Erfordert macOS 14 oder neuer."
+}

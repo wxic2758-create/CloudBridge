@@ -22,11 +22,11 @@ Users may enter server connection details, including:
 
 These details are used only to connect to the server chosen by the user.
 
-Server configurations and passwords entered in the password field are saved locally in the app's settings on your Mac. CloudBridge does not access macOS Keychain.
+Server configuration metadata is saved locally in the app's settings on your Mac. Saved server passwords are stored securely in macOS Keychain and are retrieved locally when CloudBridge connects to that server. You do not need to re-enter a saved password each time you connect.
 
 Credentials are used for password authentication to the SSH/SFTP server you select, not sent to the developer or CloudBridge services. The password is sent only to that server through SSH.
 
-To remove a saved credential, disconnect, edit the server, clear the password field, and save. Deleting a server removes its locally saved configuration and credential.
+To remove a saved credential, disconnect, edit the server, and choose Remove Saved Password. Deleting a server removes its locally saved configuration and Keychain credential.
 
 ## File Content
 

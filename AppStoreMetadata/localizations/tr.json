@@ -1,0 +1,8 @@
+{
+  "locale": "tr",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH Uzak Dosya Yöneticisi",
+  "promotionalText": "SSH/SFTP sunucularına bağlanın, uzak dosyalara göz atın, Quick Look ile önizleyin ve dosya ya da klasörleri doğrudan Mac’inize indirin.",
+  "keywords": "sunucu,dosya,indirme,istemci,vps,nas,yönetim,depolama,klasör",
+  "description": "CloudBridge, Mac için odaklı bir SFTP istemcisi ve SSH uzak dosya yöneticisidir. Kendi sunucularınıza bağlanın, uzak klasörlerde gezinin ve arama yapın, macOS Quick Look ile dosyaları önizleyin ve dosya ya da klasörleri doğrudan Mac’inize indirin.\n\nÖZELLİKLER\n\n• Parola ile SSH/SFTP bağlantısı\n• Uzak klasörlerde gezinme ve arama\n• Quick Look ile dosya önizleme\n• Dosya ve klasör indirme\n• İndirmeleri duraklatma, sürdürme, iptal etme ve yeniden deneme\n• Tamamlanan indirmeleri Finder’da gösterme\n\nGİZLİLİK\n\nCloudBridge hesap gerektirmez; reklam, analiz veya izleme SDK’sı ve geliştiriciye ait aracı sunucu içermez. Bağlantılar Mac’inizden seçtiğiniz sunucuya doğrudan gider. Kaydedilen sunucu parolaları macOS Anahtar Zinciri’nde korunur.\n\nGeliştiriciler, sistem yöneticileri ve VPS/NAS kullanıcıları için. macOS 14 veya daha yenisini gerektirir."
+}

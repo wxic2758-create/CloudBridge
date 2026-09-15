@@ -1,0 +1,8 @@
+{
+  "locale": "sk",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "Správca súborov SSH",
+  "promotionalText": "Pripojte SSH/SFTP servery, prehliadajte vzdialené súbory, zobrazte ich cez Quick Look a sťahujte súbory či priečinky priamo do Macu.",
+  "keywords": "server,súbory,sťahovanie,klient,vps,nas,správa,úložisko,priečinky",
+  "description": "CloudBridge je SFTP klient a správca vzdialených súborov SSH pre Mac. Pripojte sa k svojim serverom, prehliadajte a vyhľadávajte vzdialené priečinky, zobrazujte súbory pomocou macOS Quick Look a sťahujte súbory či priečinky priamo do Macu.\n\nFUNKCIE\n\n• SSH/SFTP pripojenie heslom\n• Prehliadanie a vyhľadávanie vzdialených priečinkov\n• Náhľad cez Quick Look\n• Sťahovanie súborov a priečinkov\n• Pozastavenie, pokračovanie, zrušenie a opakovanie sťahovania\n• Zobrazenie dokončených sťahovaní vo Finderi\n\nSÚKROMIE\n\nCloudBridge nevyžaduje účet a neobsahuje reklamy, analytické ani sledovacie SDK ani vývojársky sprostredkovací server. Pripojenia idú priamo z Macu na zvolený server. Uložené heslá sú chránené v Kľúčenke macOS.\n\nPre vývojárov, správcov systémov a používateľov VPS/NAS. Vyžaduje macOS 14 alebo novší."
+}

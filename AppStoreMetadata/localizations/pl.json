@@ -1,0 +1,8 @@
+{
+  "locale": "pl",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "Menedżer plików SSH",
+  "promotionalText": "Łącz się z serwerami SSH/SFTP, przeglądaj pliki zdalne, podglądaj je w Quick Look i pobieraj pliki lub foldery bezpośrednio na Maca.",
+  "keywords": "serwer,pliki,pobieranie,klient,vps,nas,admin,pamięć,katalogi",
+  "description": "CloudBridge to klient SFTP i menedżer plików SSH dla Maca. Łącz się z własnymi serwerami, przeglądaj i wyszukuj zdalne foldery, podglądaj pliki za pomocą macOS Quick Look oraz pobieraj pliki i foldery bezpośrednio na Maca.\n\nFUNKCJE\n\n• Połączenia SSH/SFTP z hasłem\n• Przeglądanie i wyszukiwanie zdalnych folderów\n• Podgląd plików w Quick Look\n• Pobieranie plików i folderów\n• Wstrzymywanie, wznawianie, anulowanie i ponawianie pobrań\n• Pokazywanie ukończonych pobrań w Finderze\n\nPRYWATNOŚĆ\n\nCloudBridge nie wymaga konta i nie zawiera reklam, SDK analitycznych lub śledzących ani serwera pośredniczącego dewelopera. Połączenia odbywają się bezpośrednio między Makiem a wybranym serwerem. Zapisane hasła są chronione w Pęku kluczy macOS.\n\nDla deweloperów, administratorów systemów oraz użytkowników VPS i NAS. Wymaga macOS 14 lub nowszego."
+}

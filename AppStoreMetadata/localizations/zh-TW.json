@@ -1,0 +1,8 @@
+{
+  "locale": "zh-TW",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH 遠端檔案管理器",
+  "promotionalText": "連接你的 SSH/SFTP 伺服器，瀏覽遠端檔案，使用 Quick Look 預覽，並直接將檔案或資料夾下載到 Mac。無需帳號、不追蹤，也不經 CloudBridge 中轉。",
+  "keywords": "伺服器,遠端目錄,檔案管理,下載工具,雲端主機,網路儲存,開發工具",
+  "description": "CloudBridge 是一款為 Mac 打造的 SFTP 用戶端與 SSH 遠端檔案管理器。連接你自己的伺服器，瀏覽與搜尋遠端資料夾，使用 macOS Quick Look 預覽檔案，並直接將檔案或資料夾下載到 Mac。\n\n主要功能\n\n• 使用密碼連線至 SSH/SFTP 伺服器\n• 瀏覽與搜尋遠端資料夾\n• 使用 Quick Look 預覽遠端檔案\n• 下載檔案與資料夾\n• 暫停、繼續、取消與重試下載工作\n• 在 Finder 中顯示已完成的下載\n\n隱私優先\n\nCloudBridge 不需要帳號，不包含廣告、分析或追蹤 SDK，也不使用開發者中轉伺服器。連線直接發生在你的 Mac 與你選擇的伺服器之間。已儲存的伺服器密碼由 macOS 鑰匙圈保護。\n\n適合開發者、系統管理員、VPS 與 NAS 使用者。需要 macOS 14 或以上版本。"
+}

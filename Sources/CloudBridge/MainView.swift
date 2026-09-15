@@ -365,8 +365,7 @@ struct MainView: View {
                 Table(visibleItems, selection: $model.selectedItemIDs) {
                     TableColumn(copy("file.name")) { item in
                         HStack(spacing: 12) {
-                            Image(systemName: item.systemImageName)
-                                .foregroundStyle(item.isDirectory ? Finish.lilac : Color.secondary)
+                            RemoteItemIcon(item: item)
                                 .frame(width: 24)
                             Text(item.name).lineLimit(1)
                         }
@@ -503,9 +502,7 @@ struct MainView: View {
     private func downloadRow(_ task: DownloadTask) -> some View {
         let removed = task.status == .completed && !task.destinationExists
         HStack(spacing: 12) {
-            Image(systemName: taskSystemImageName(task))
-                .font(.body)
-                .foregroundStyle(Finish.lilac)
+            RemoteItemIcon(item: taskRemoteItem(task))
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.itemName)
@@ -645,7 +642,7 @@ struct MainView: View {
         return "0%"
     }
 
-    private func taskSystemImageName(_ task: DownloadTask) -> String {
+    private func taskRemoteItem(_ task: DownloadTask) -> RemoteItem {
         RemoteItem(
             id: task.remotePath,
             name: task.itemName,
@@ -653,7 +650,7 @@ struct MainView: View {
             kind: task.isDirectory ? .directory : .file,
             size: nil,
             modifiedAt: nil
-        ).systemImageName
+        )
     }
 
     private func downloadHistoryHelp(_ task: DownloadTask) -> String {
@@ -796,6 +793,7 @@ struct MainView: View {
 
 struct SettingsView: View {
     @Environment(BrowserModel.self) private var model
+    @Environment(\.openURL) private var openURL
     @State private var privacyExpanded = false
 
     var body: some View {
@@ -858,14 +856,36 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 18) {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(copy("settings.credentials")).font(.headline)
-                                Text(copy("settings.authenticationHelp"))
+                                Text(copy("settings.credentialsHelp"))
                             }
                             Text(copy("settings.previewHelp"))
+                            HStack(spacing: 14) {
+                                Button {
+                                    openURL(URL(string: "https://wxic2758-create.github.io/CloudBridge/privacy.html")!)
+                                } label: {
+                                    externalLinkLabel(copy("settings.privacyPolicy"))
+                                }
+                                .foregroundStyle(Finish.lilac)
+                                .help(copy("settings.privacyPolicyHint"))
+                                Button {
+                                    openURL(URL(string: "https://wxic2758-create.github.io/CloudBridge/support.html")!)
+                                } label: {
+                                    externalLinkLabel(copy("settings.support"))
+                                }
+                                .foregroundStyle(Finish.lilac)
+                                .help(copy("settings.supportHint"))
+                            }
+                            .buttonStyle(.borderless)
                         }.foregroundStyle(.secondary)
                     }
                 }.modifier(Panel())
             }.frame(maxWidth: 680).padding(40).frame(maxWidth: .infinity)
         }
+    }
+
+    private func externalLinkLabel(_ title: String) -> some View {
+        Label(title, systemImage: "arrow.up.right")
+            .labelStyle(.titleAndIcon)
     }
 }
 
@@ -874,6 +894,7 @@ private struct ConnectionEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State private var advanced = false
     @State private var passwordVisible = false
+    @State private var passwordRemoval = false
     private var valid: Bool {
         !model.editingServer.host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !model.editingServer.username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -903,30 +924,51 @@ private struct ConnectionEditor: View {
                             }
                             Divider().padding(.leading, 38)
                             editorTextRow(icon: "key", title: copy("editor.password")) {
-                                HStack(spacing: 8) {
-                                    Group {
-                                        if passwordVisible {
-                                            TextField("", text: $model.editingPassword)
-                                        } else {
-                                            SecureField("", text: $model.editingPassword)
+                                if isExistingServer && !model.isChangingPassword {
+                                    HStack(spacing: 8) {
+                                        Text(copy("credentials.savedStatus"))
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Button(copy("credentials.change")) {
+                                            model.isChangingPassword = true
                                         }
+                                        .buttonStyle(.borderless)
                                     }
-                                    .textFieldStyle(.plain)
-                                    Button {
-                                        passwordVisible.toggle()
-                                    } label: {
-                                        Image(systemName: passwordVisible ? "eye.slash" : "eye")
-                                            .frame(width: 24, height: 24)
+                                } else {
+                                    HStack(spacing: 8) {
+                                        Group {
+                                            if passwordVisible {
+                                                TextField("", text: $model.editingPassword)
+                                            } else {
+                                                SecureField("", text: $model.editingPassword)
+                                            }
+                                        }
+                                        .textFieldStyle(.plain)
+                                        Button {
+                                            passwordVisible.toggle()
+                                        } label: {
+                                            Image(systemName: passwordVisible ? "eye.slash" : "eye")
+                                                .frame(width: 24, height: 24)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .foregroundStyle(.secondary)
+                                        .help(copy(passwordVisible ? "action.hidePassword" : "action.showPassword"))
+                                        .accessibilityLabel(copy(passwordVisible ? "action.hidePassword" : "action.showPassword"))
                                     }
-                                    .buttonStyle(.plain)
-                                    .foregroundStyle(.secondary)
-                                    .help(copy(passwordVisible ? "action.hidePassword" : "action.showPassword"))
-                                    .accessibilityLabel(copy(passwordVisible ? "action.hidePassword" : "action.showPassword"))
                                 }
                             }
                         }
                         if isExistingServer {
-                            Text(copy("credentials.keepHelp"))
+                            HStack {
+                                Text(copy("credentials.keepHelp"))
+                                Spacer()
+                                if model.hasSavedPassword(for: model.editingServer) {
+                                    Button(copy("credentials.remove"), role: .destructive) {
+                                        passwordRemoval = true
+                                    }
+                                        .buttonStyle(.borderless)
+                                }
+                            }
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                                 .padding(.leading, 38)
@@ -997,6 +1039,12 @@ private struct ConnectionEditor: View {
         }
         .frame(width: 640, height: 620)
         .background(Finish.ink)
+        .confirmationDialog(copy("credentials.removeTitle"), isPresented: $passwordRemoval, titleVisibility: .visible) {
+            Button(copy("credentials.remove"), role: .destructive, action: model.removeEditingPassword)
+            Button(copy("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(copy("credentials.removeHelp"))
+        }
     }
 
     @ViewBuilder

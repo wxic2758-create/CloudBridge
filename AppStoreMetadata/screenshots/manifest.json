@@ -1,0 +1,11 @@
+{
+  "strategy": "One English screenshot set inherited globally",
+  "sourceDirectory": "AppStoreMetadata/screenshots",
+  "files": [
+    "01-browse-your-servers.png",
+    "02-preview-before-you-download.png",
+    "03-every-download-in-sight.png",
+    "04-private-by-design.png"
+  ],
+  "status": "All four English screenshots remediated and stored here at 2880 × 1800 RGB. Inherit this set globally."
+}

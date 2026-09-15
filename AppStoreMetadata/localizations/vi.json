@@ -1,0 +1,8 @@
+{
+  "locale": "vi",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "Quản lý tệp SSH từ xa",
+  "promotionalText": "Kết nối máy chủ SSH/SFTP, duyệt tệp từ xa, xem trước bằng Quick Look và tải tệp hoặc thư mục trực tiếp về Mac. Không cần tài khoản hay theo dõi.",
+  "keywords": "máy chủ,tệp,tải xuống,ứng dụng,vps,nas,quản trị,lưu trữ,thư mục",
+  "description": "CloudBridge là ứng dụng SFTP và trình quản lý tệp SSH từ xa dành cho Mac. Kết nối với máy chủ của bạn, duyệt và tìm kiếm thư mục từ xa, xem trước tệp bằng macOS Quick Look và tải tệp hoặc thư mục trực tiếp về Mac.\n\nTÍNH NĂNG\n\n• Kết nối SSH/SFTP bằng mật khẩu\n• Duyệt và tìm kiếm thư mục từ xa\n• Xem trước bằng Quick Look\n• Tải tệp và thư mục\n• Tạm dừng, tiếp tục, hủy và thử lại tải xuống\n• Hiển thị tệp đã tải trong Finder\n\nQUYỀN RIÊNG TƯ\n\nCloudBridge không yêu cầu tài khoản, không có quảng cáo, SDK phân tích hoặc theo dõi và không dùng máy chủ trung gian của nhà phát triển. Kết nối đi trực tiếp từ Mac tới máy chủ bạn chọn. Mật khẩu máy chủ đã lưu được bảo vệ trong macOS Keychain.\n\nDành cho nhà phát triển, quản trị hệ thống và người dùng VPS/NAS. Yêu cầu macOS 14 trở lên."
+}

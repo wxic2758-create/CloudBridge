@@ -6,8 +6,8 @@ BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="${APP_NAME:-CloudBridge}"
 BUNDLE_ID="${BUNDLE_ID:-com.dazhang.CloudBridge}"
 APP_VERSION="${APP_VERSION:-1.0}"
-BUILD_NUMBER="${BUILD_NUMBER:-17}"
-APP_CATEGORY="${APP_CATEGORY:-public.app-category.productivity}"
+BUILD_NUMBER="${BUILD_NUMBER:-18}"
+APP_CATEGORY="${APP_CATEGORY:-public.app-category.developer-tools}"
 APP_SIGN_IDENTITY="${APP_SIGN_IDENTITY:--}"
 INSTALLER_SIGN_IDENTITY="${INSTALLER_SIGN_IDENTITY:-}"
 APPSTORE_PROFILE="${APPSTORE_PROFILE:-}"
@@ -82,6 +82,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <string>Copyright © 2026 CloudBridge. All rights reserved.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>CloudBridge uses your local network only when you connect to an SSH/SFTP server on your local network.</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 </dict>

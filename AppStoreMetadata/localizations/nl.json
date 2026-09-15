@@ -1,0 +1,8 @@
+{
+  "locale": "nl",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH-bestandsbeheer",
+  "promotionalText": "Verbind met SSH/SFTP-servers, blader door externe bestanden, bekijk ze met Quick Look en download bestanden of mappen direct naar je Mac. Zonder account of tracking.",
+  "keywords": "server,bestanden,download,client,vps,nas,beheer,opslag,mappen",
+  "description": "CloudBridge is een gerichte SFTP-client en SSH-bestandsbeheerder voor Mac. Maak verbinding met je eigen servers, blader en zoek in externe mappen, bekijk bestanden met macOS Quick Look en download bestanden of mappen rechtstreeks naar je Mac.\n\nFUNCTIES\n\n• SSH/SFTP-verbindingen met wachtwoord\n• Externe mappen bekijken en doorzoeken\n• Voorvertoning met Quick Look\n• Bestanden en mappen downloaden\n• Downloads pauzeren, hervatten, annuleren en opnieuw proberen\n• Voltooide downloads tonen in Finder\n\nPRIVACY\n\nCloudBridge vereist geen account en bevat geen advertenties, analyse- of tracking-SDK's en geen proxyserver van de ontwikkelaar. Verbindingen lopen rechtstreeks van je Mac naar de gekozen server. Opgeslagen serverwachtwoorden worden beschermd in macOS Keychain.\n\nVoor ontwikkelaars, systeembeheerders en VPS- of NAS-gebruikers. Vereist macOS 14 of nieuwer."
+}

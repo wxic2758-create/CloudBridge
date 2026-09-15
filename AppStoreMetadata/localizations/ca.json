@@ -1,0 +1,8 @@
+{
+  "locale": "ca",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "Gestor de fitxers SSH",
+  "promotionalText": "Connecta servidors SSH/SFTP, navega pels fitxers remots, previsualitza'ls amb Quick Look i baixa fitxers o carpetes directament al Mac. Sense compte ni seguiment.",
+  "keywords": "servidor,fitxers,baixada,client,vps,nas,gestió,emmagatzematge,carpetes",
+  "description": "CloudBridge és un client SFTP i gestor de fitxers SSH per a Mac. Connecta't als teus servidors, navega i cerca en carpetes remotes, previsualitza fitxers amb macOS Quick Look i baixa fitxers o carpetes directament al Mac.\n\nFUNCIONS\n\n• Connexions SSH/SFTP amb contrasenya\n• Navegació i cerca en carpetes remotes\n• Previsualització amb Quick Look\n• Baixada de fitxers i carpetes\n• Pausa, represa, cancel·lació i reintent de baixades\n• Mostrar les baixades completades al Finder\n\nPRIVACITAT\n\nCloudBridge no requereix cap compte i no inclou anuncis, SDK d'analítica o seguiment ni servidor intermediari del desenvolupador. Les connexions van directament del Mac al servidor triat. Les contrasenyes desades es protegeixen al Clauer del macOS.\n\nPer a desenvolupadors, administradors de sistemes i usuaris de VPS o NAS. Requereix macOS 14 o posterior."
+}

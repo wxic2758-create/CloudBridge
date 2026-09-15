@@ -658,27 +658,64 @@ extension PreviewTextLoaderTests {
 
 @MainActor
 final class ServerNavigationTests: XCTestCase {
-    func testSavedServerRoundTripKeepsPasswordInLocalConfiguration() throws {
+    private final class MemoryCredentials: ServerPasswordStoring, @unchecked Sendable {
+        var values: [UUID: String] = [:]
+        func readPassword(serverID: UUID) throws -> String? { values[serverID] }
+        func setPassword(_ password: String, serverID: UUID) throws { values[serverID] = password }
+        func deletePassword(serverID: UUID) throws { values.removeValue(forKey: serverID) }
+    }
+
+    func testLegacyPasswordMigratesToKeychainAndIsRemovedFromDefaults() throws {
+        let suite = "CloudBridgeTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let server = SavedServer(host: "example.invalid", username: "root")
+        var legacyRecord = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(server)) as? [String: Any]
+        )
+        legacyRecord["password"] = "legacy-secret"
+        defaults.set(
+            try JSONSerialization.data(withJSONObject: [legacyRecord]),
+            forKey: SavedServerStore.storageKey
+        )
+        let credentials = MemoryCredentials()
+
+        let migrated = SavedServerStore.load(defaults: defaults, credentials: credentials)
+
+        XCTAssertEqual(migrated.count, 1)
+        XCTAssertEqual(migrated[0].password, "")
+        XCTAssertEqual(try credentials.readPassword(serverID: server.id), "legacy-secret")
+        let persisted = try XCTUnwrap(defaults.data(forKey: SavedServerStore.storageKey))
+        XCTAssertFalse(String(decoding: persisted, as: UTF8.self).contains("legacy-secret"))
+    }
+
+    func testSavedServerRoundTripDoesNotPersistPassword() throws {
         let server = SavedServer(host: "example.invalid", username: "root", password: "local-secret")
 
         let data = try JSONEncoder().encode(server)
         let restored = try JSONDecoder().decode(SavedServer.self, from: data)
 
-        XCTAssertEqual(restored.password, "local-secret")
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("local-secret"))
+        XCTAssertEqual(restored.password, "")
     }
 
-    func testSelectingAndEditingServerUsesLocalPasswordWithoutCredentialLookup() {
-        let server = SavedServer(host: "example.invalid", username: "root", password: "local-secret")
-        let model = BrowserModel(initialServers: [server])
+    func testSelectingAndEditingServerUsesKeychainPasswordWithoutExposingIt() throws {
+        let server = SavedServer(host: "example.invalid", username: "root")
+        let credentials = MemoryCredentials()
+        try credentials.setPassword("local-secret", serverID: server.id)
+        let model = BrowserModel(initialServers: [server], credentials: credentials)
 
         XCTAssertEqual(model.profile.password, "local-secret")
         model.editSelectedServer()
-        XCTAssertEqual(model.editingPassword, "local-secret")
+        XCTAssertEqual(model.editingPassword, "")
+        XCTAssertTrue(model.hasSavedPassword(for: server))
     }
 
-    func testReconnectRestoresPasswordFromSelectedLocalServer() {
-        let server = SavedServer(host: "example.invalid", username: "root", password: "local-secret")
-        let model = BrowserModel(initialServers: [server])
+    func testReconnectRestoresPasswordFromKeychain() throws {
+        let server = SavedServer(host: "example.invalid", username: "root")
+        let credentials = MemoryCredentials()
+        try credentials.setPassword("local-secret", serverID: server.id)
+        let model = BrowserModel(initialServers: [server], credentials: credentials)
         model.profile.password = ""
 
         let reconnectProfile = model.preparedProfileForConnection()

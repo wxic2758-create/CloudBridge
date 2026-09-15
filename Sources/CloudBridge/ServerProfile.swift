@@ -21,6 +21,8 @@ struct SavedServer: Codable, Identifiable, Equatable {
     var host: String
     var port: Int
     var username: String
+    // Transient only. The custom Codable implementation decodes legacy values
+    // for migration but never writes a password back to UserDefaults.
     var password: String
     var defaultRemotePath: String
     var privateKeyPath: String?
@@ -28,7 +30,8 @@ struct SavedServer: Codable, Identifiable, Equatable {
     var privateKeyBookmark: Data?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, host, port, username, password, defaultRemotePath, privateKeyPath, privateKeyBookmark
+        case id, name, host, port, username, defaultRemotePath, privateKeyPath, privateKeyBookmark
+        case password
     }
 
     init(from decoder: Decoder) throws {
@@ -43,6 +46,18 @@ struct SavedServer: Codable, Identifiable, Equatable {
         privateKeyPath = try c.decodeIfPresent(String.self, forKey: .privateKeyPath)
         // A damaged/legacy authorization must not make all saved servers disappear.
         privateKeyBookmark = try? c.decodeIfPresent(Data.self, forKey: .privateKeyBookmark)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(host, forKey: .host)
+        try c.encode(port, forKey: .port)
+        try c.encode(username, forKey: .username)
+        try c.encode(defaultRemotePath, forKey: .defaultRemotePath)
+        try c.encodeIfPresent(privateKeyPath, forKey: .privateKeyPath)
+        try c.encodeIfPresent(privateKeyBookmark, forKey: .privateKeyBookmark)
     }
 
     init(
@@ -76,7 +91,7 @@ struct SavedServer: Codable, Identifiable, Equatable {
         "\(username)@\(host):\(port)"
     }
 
-    func preparedForConnection() -> ServerProfile {
+    func preparedForConnection(password: String = "") -> ServerProfile {
         ServerProfile(
             host: host,
             port: port,
@@ -139,26 +154,45 @@ final class PrivateKeyAccess {
 }
 
 enum SavedServerStore {
-    private static let storageKey = "savedServers"
+    static let storageKey = "savedServers"
 
-    static func load() -> [SavedServer] {
-        guard let data = UserDefaults.standard.data(forKey: storageKey) else {
+    static func load(
+        defaults: UserDefaults = .standard,
+        credentials: any ServerPasswordStoring = ServerPasswordStore()
+    ) -> [SavedServer] {
+        guard let data = defaults.data(forKey: storageKey) else {
             return []
         }
 
         do {
-            return try JSONDecoder().decode([SavedServer].self, from: data)
+            var servers = try JSONDecoder().decode([SavedServer].self, from: data)
+            let legacyServers = servers.filter { !$0.password.isEmpty }
+            guard !legacyServers.isEmpty else { return servers }
+
+            // Keep the original UserDefaults value untouched unless every
+            // credential has reached Keychain. A later launch can retry safely.
+            do {
+                for server in legacyServers {
+                    try credentials.setPassword(server.password, serverID: server.id)
+                }
+                for index in servers.indices { servers[index].password = "" }
+                save(servers, defaults: defaults)
+            } catch {
+                // The in-memory legacy password still permits this session's
+                // connection; the persisted value remains available for retry.
+            }
+            return servers
         } catch {
             // Preserve the original data for recovery; loading must never delete records.
             return []
         }
     }
 
-    static func save(_ servers: [SavedServer]) {
+    static func save(_ servers: [SavedServer], defaults: UserDefaults = .standard) {
         guard let data = try? JSONEncoder().encode(servers) else {
             return
         }
 
-        UserDefaults.standard.set(data, forKey: storageKey)
+        defaults.set(data, forKey: storageKey)
     }
 }

@@ -104,7 +104,7 @@
 "settings.configuration" = "服务器配置";
 "settings.configurationHelp" = "服务器名称、地址、端口、用户名及私钥路径保存在这台 Mac 的应用偏好设置中。";
 "settings.credentials" = "保存的密码";
-"settings.credentialsHelp" = "服务器密码或私钥密码短语随服务器配置保存在本机，CloudBridge 不会访问 macOS 钥匙串。";
+"settings.credentialsHelp" = "服务器密码会安全地存储在 macOS 钥匙串中，并在 CloudBridge 连接时仅在本机读取。";
 "settings.authentication" = "连接你的服务器";
 "settings.authenticationHelp" = "凭据用于向你选择的服务器进行认证。CloudBridge 不会将其发送到 CloudBridge 账号或云服务。";
 "settings.privacy" = "隐私与凭据";
@@ -155,10 +155,10 @@
 "settings.languageHelp" = "切换后立即生效。地区变体会保留各自的术语和格式。";
 "editor.advanced" = "高级选项";
 "editor.optionalName" = "选填，默认使用服务器地址";
-"credentials.unlockReason" = "授权 CloudBridge 读取此次连接的已保存密码。";
-"credentials.readFailed" = "无法读取已保存密码，请重新连接或更新密码。";
-"credentials.keepHelp" = "可直接修改已保存密码；清空此字段即可删除。";
-"credentials.remove" = "删除已保存密码";
+"credentials.unlockReason" = "授权 CloudBridge 读取此连接已保存的密码。";
+"credentials.readFailed" = "无法访问已保存的密码。请重新连接，或更改已保存的密码。";
+"credentials.keepHelp" = "密码已保存在 macOS 钥匙串中。保持不变，或选择“更改密码”。";
+"credentials.remove" = "移除已保存的密码";
 "status.connecting" = "正在连接…";
 "status.refreshing" = "正在刷新…";
 "status.loading" = "正在加载…";
@@ -205,3 +205,11 @@
 "file.localCopy" = "本地副本可用";
 "file.localMissing" = "曾经下载过，本地副本已删除";
 "file.remoteUpdated" = "服务器文件已有更新";
+"credentials.savedStatus" = "已安全保存在 macOS 钥匙串中";
+"credentials.change" = "更改密码";
+"credentials.removeTitle" = "移除已保存的密码？";
+"credentials.removeHelp" = "CloudBridge 将从 macOS 钥匙串中移除此密码。下次连接时，您需要重新输入密码。";
+"credentials.writeFailed" = "无法将密码保存到 macOS 钥匙串。";
+"credentials.removeFailed" = "无法从 macOS 钥匙串中移除已保存的密码。";
+"settings.support" = "支持";
+"settings.supportHint" = "在默认浏览器中打开 CloudBridge 支持页面。";

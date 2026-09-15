@@ -46,6 +46,7 @@ final class BrowserModel {
     var selectedServerID: SavedServer.ID?
     var editingServer = SavedServer()
     var editingPassword = ""
+    var isChangingPassword = false
     var isShowingServerEditor = false
     var localDownloadDirectory = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
     var currentPath = "."
@@ -62,6 +63,7 @@ final class BrowserModel {
     var lastEnqueuedDownloadTaskID: DownloadTask.ID?
 
     private let client = SFTPClient()
+    private let credentials: any ServerPasswordStoring
     var previewURL: URL?
 
     func dismissPreview() {
@@ -86,8 +88,13 @@ final class BrowserModel {
         privateKeyAccess = nil
     }
 
-    init(initialServers: [SavedServer]? = nil, initialDownloadTasks: [DownloadTask]? = nil) {
-        savedServers = initialServers ?? SavedServerStore.load()
+    init(
+        initialServers: [SavedServer]? = nil,
+        initialDownloadTasks: [DownloadTask]? = nil,
+        credentials: any ServerPasswordStoring = ServerPasswordStore()
+    ) {
+        self.credentials = credentials
+        savedServers = initialServers ?? SavedServerStore.load(credentials: credentials)
         downloadTasks = initialDownloadTasks ?? (initialServers == nil ? DownloadHistoryStore.load() : [])
         localDownloadDirectory = SecurityScopedBookmarkStore.url(for: .downloadDirectory)
             ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
@@ -176,6 +183,7 @@ final class BrowserModel {
             username: "root"
         )
         editingPassword = ""
+        isChangingPassword = true
         isShowingServerEditor = true
     }
 
@@ -186,7 +194,8 @@ final class BrowserModel {
 
         clearPendingConnection()
         editingServer = server
-        editingPassword = server.password
+        editingPassword = ""
+        isChangingPassword = false
         isShowingServerEditor = true
     }
 
@@ -207,7 +216,20 @@ final class BrowserModel {
             return
         }
 
-        server.password = editingPassword
+        let existingServer = savedServers.contains { $0.id == server.id }
+        do {
+            if !editingPassword.isEmpty {
+                try credentials.setPassword(editingPassword, serverID: server.id)
+            } else if !existingServer {
+                throw BrowserModelError.missingPassword
+            }
+        } catch {
+            let message = AppLanguage.text("credentials.writeFailed")
+            errorMessage = message
+            statusMessage = message
+            return
+        }
+        server.password = ""
 
         if let index = savedServers.firstIndex(where: { $0.id == server.id }) {
             savedServers[index] = server
@@ -225,6 +247,7 @@ final class BrowserModel {
         }
         isShowingServerEditor = false
         editingPassword = ""
+        isChangingPassword = false
     }
 
     func choosePrivateKey() {
@@ -255,6 +278,14 @@ final class BrowserModel {
         }
 
         clearPendingConnection()
+        do {
+            try credentials.deletePassword(serverID: selectedServerID)
+        } catch {
+            let message = AppLanguage.text("credentials.removeFailed")
+            errorMessage = message
+            statusMessage = message
+            return
+        }
         savedServers.removeAll { $0.id == selectedServerID }
         SavedServerStore.save(savedServers)
         self.selectedServerID = nil
@@ -279,7 +310,7 @@ final class BrowserModel {
             return
         }
 
-        profile = server.preparedForConnection()
+        profile = server.preparedForConnection(password: password(for: server))
         currentPath = server.defaultRemotePath
         items = []
         selectedItemID = nil
@@ -293,7 +324,31 @@ final class BrowserModel {
     func preparedProfileForConnection() -> ServerProfile {
         // The selected saved server is the source of truth. `profile` is transient and
         // intentionally loses its password when a connection is torn down.
-        (selectedServer?.preparedForConnection() ?? profile.preparedForConnection())
+        if let selectedServer {
+            return selectedServer.preparedForConnection(password: password(for: selectedServer))
+        }
+        return profile.preparedForConnection()
+    }
+
+    func removeEditingPassword() {
+        guard savedServers.contains(where: { $0.id == editingServer.id }) else { return }
+        do {
+            try credentials.deletePassword(serverID: editingServer.id)
+            isChangingPassword = true
+            editingPassword = ""
+        } catch {
+            let message = AppLanguage.text("credentials.removeFailed")
+            errorMessage = message
+            statusMessage = message
+        }
+    }
+
+    func hasSavedPassword(for server: SavedServer) -> Bool {
+        (try? credentials.readPassword(serverID: server.id))?.isEmpty == false
+    }
+
+    private func password(for server: SavedServer) -> String {
+        (try? credentials.readPassword(serverID: server.id)) ?? server.password
     }
 
     func connect() {

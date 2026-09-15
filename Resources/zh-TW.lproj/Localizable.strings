@@ -104,7 +104,7 @@
 "settings.configuration" = "伺服器配置";
 "settings.configurationHelp" = "伺服器名稱、地址、埠、使用者名稱及私鑰路徑儲存在這臺 Mac 的應用偏好設定中。";
 "settings.credentials" = "儲存的密碼";
-"settings.credentialsHelp" = "伺服器密碼或私鑰密碼短語隨伺服器設定儲存在本機，CloudBridge 不會存取 macOS 鑰匙圈。";
+"settings.credentialsHelp" = "伺服器密碼會安全地儲存在 macOS 鑰匙圈中，並在 CloudBridge 連線時僅於本機讀取。";
 "settings.authentication" = "連線你的伺服器";
 "settings.authenticationHelp" = "憑據用於向你選擇的伺服器進行認證。CloudBridge 不會將其傳送到 CloudBridge 賬號或雲服務。";
 "settings.privacy" = "隱私與憑據";
@@ -155,10 +155,10 @@
 "settings.languageHelp" = "切換後立即生效。地區變體會保留各自的術語與格式。";
 "editor.advanced" = "進階選項";
 "editor.optionalName" = "選填，預設使用伺服器位址";
-"credentials.unlockReason" = "授權 CloudBridge 讀取此次連線的已儲存密碼。";
-"credentials.readFailed" = "無法讀取已儲存密碼，請重新連線或更新密碼。";
-"credentials.keepHelp" = "可直接修改已儲存密碼；清除此欄位即可刪除。";
-"credentials.remove" = "刪除已儲存密碼";
+"credentials.unlockReason" = "授權 CloudBridge 讀取此連線已儲存的密碼。";
+"credentials.readFailed" = "無法存取已儲存的密碼。請重新連線，或更改已儲存的密碼。";
+"credentials.keepHelp" = "密碼已儲存在 macOS 鑰匙圈中。保持不變，或選擇「更改密碼」。";
+"credentials.remove" = "移除已儲存的密碼";
 "status.connecting" = "正在連線…";
 "status.refreshing" = "正在重新整理…";
 "status.loading" = "正在載入…";
@@ -204,3 +204,11 @@
 "file.localCopy" = "本機副本可用";
 "file.localMissing" = "曾經下載過，本機副本已刪除";
 "file.remoteUpdated" = "伺服器檔案已有更新";
+"credentials.savedStatus" = "已安全儲存在 macOS 鑰匙圈中";
+"credentials.change" = "更改密碼";
+"credentials.removeTitle" = "移除已儲存的密碼？";
+"credentials.removeHelp" = "CloudBridge 將從 macOS 鑰匙圈中移除此密碼。下次連線時，您需要重新輸入密碼。";
+"credentials.writeFailed" = "無法將密碼儲存到 macOS 鑰匙圈。";
+"credentials.removeFailed" = "無法從 macOS 鑰匙圈中移除已儲存的密碼。";
+"settings.support" = "支援";
+"settings.supportHint" = "在預設瀏覽器中開啟 CloudBridge 支援頁面。";

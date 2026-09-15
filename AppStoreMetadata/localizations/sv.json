@@ -1,0 +1,8 @@
+{
+  "locale": "sv",
+  "name": "CloudBridge: SFTP Transfer",
+  "subtitle": "SSH-fjärrfilhanterare",
+  "promotionalText": "Anslut till SSH/SFTP-servrar, bläddra bland fjärrfiler, förhandsvisa med Quick Look och hämta filer eller mappar direkt till Mac. Inget konto eller spårning.",
+  "keywords": "server,filer,nedladdning,klient,vps,nas,admin,lagring,mappar",
+  "description": "CloudBridge är en SFTP-klient och SSH-fjärrfilhanterare för Mac. Anslut till dina egna servrar, bläddra och sök i fjärrmappar, förhandsvisa filer med macOS Quick Look och hämta filer eller mappar direkt till Mac.\n\nFUNKTIONER\n\n• SSH/SFTP-anslutning med lösenord\n• Bläddra och sök i fjärrmappar\n• Förhandsvisa med Quick Look\n• Hämta filer och mappar\n• Pausa, återuppta, avbryt och försök igen\n• Visa slutförda hämtningar i Finder\n\nINTEGRITET\n\nCloudBridge kräver inget konto och innehåller inga annonser, analys- eller spårnings-SDK:er eller utvecklardriven mellanserver. Anslutningar går direkt från Mac till den valda servern. Sparade serverlösenord skyddas i macOS-nyckelringen.\n\nFör utvecklare, systemadministratörer och VPS/NAS-användare. Kräver macOS 14 eller senare."
+}
