@@ -54,6 +54,10 @@
 "action.retry" = "重試";
 "action.pause" = "暫停";
 "action.resume" = "繼續";
+"window.showMain" = "顯示主視窗";
+"credentials.savedSecurely" = "已安全儲存在 macOS 鑰匙圈中";
+"action.changePassword" = "更改密碼";
+"action.removeSavedPassword" = "移除已儲存的密碼";
 "error.title" = "操作未完成";
 "error.unknown" = "發生未知錯誤。";
 "server.removeTitle" = "移除此伺服器？";

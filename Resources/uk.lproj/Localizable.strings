@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Призупинити";
 "action.resume" = "Продовжити";
+"window.showMain" = "Показати головне вікно";
+"credentials.savedSecurely" = "Безпечно збережено у В'язці ключів macOS";
+"action.changePassword" = "Змінити пароль";
+"action.removeSavedPassword" = "Видалити збережений пароль";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

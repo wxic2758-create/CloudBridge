@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Jeda";
 "action.resume" = "Sambung";
+"window.showMain" = "Paparkan tetingkap utama";
+"credentials.savedSecurely" = "Disimpan dengan selamat dalam Rantai Kunci macOS";
+"action.changePassword" = "Tukar kata laluan";
+"action.removeSavedPassword" = "Alih keluar kata laluan disimpan";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Pausa";
 "action.resume" = "Reprèn";
+"window.showMain" = "Mostra la finestra principal";
+"credentials.savedSecurely" = "Desada de manera segura al Clauer del macOS";
+"action.changePassword" = "Canvia la contrasenya";
+"action.removeSavedPassword" = "Elimina la contrasenya desada";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

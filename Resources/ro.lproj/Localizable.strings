@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Pauză";
 "action.resume" = "Reia";
+"window.showMain" = "Afișează fereastra principală";
+"credentials.savedSecurely" = "Salvat în siguranță în Brelocul macOS";
+"action.changePassword" = "Schimbă parola";
+"action.removeSavedPassword" = "Elimină parola salvată";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

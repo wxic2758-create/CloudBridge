@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Pauziraj";
 "action.resume" = "Nastavi";
+"window.showMain" = "Prikaži glavni prozor";
+"credentials.savedSecurely" = "Sigurno spremljeno u macOS privjesak ključeva";
+"action.changePassword" = "Promijeni lozinku";
+"action.removeSavedPassword" = "Ukloni spremljenu lozinku";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

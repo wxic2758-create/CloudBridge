@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Pausa";
 "action.resume" = "Fortsätt";
+"window.showMain" = "Visa huvudfönster";
+"credentials.savedSecurely" = "Sparat säkert i macOS-nyckelring";
+"action.changePassword" = "Ändra lösenord";
+"action.removeSavedPassword" = "Ta bort sparat lösenord";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

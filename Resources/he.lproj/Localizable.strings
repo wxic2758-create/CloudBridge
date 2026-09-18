@@ -54,6 +54,10 @@
 "action.retry" = "נסה שוב";
 "action.pause" = "השהיה";
 "action.resume" = "המשך";
+"window.showMain" = "הצג את החלון הראשי";
+"credentials.savedSecurely" = "נשמר באופן מאובטח במחזיק המפתחות של macOS";
+"action.changePassword" = "שנה סיסמה";
+"action.removeSavedPassword" = "הסר סיסמה שמורה";
 "error.title" = "הפעולה נכשלה";
 "error.unknown" = "אירעה שגיאה לא ידועה.";
 "server.removeTitle" = "להסיר את השרת השמור?";

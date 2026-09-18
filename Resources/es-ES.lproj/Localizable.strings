@@ -54,6 +54,10 @@
 "action.retry" = "Reintentar";
 "action.pause" = "Pausar";
 "action.resume" = "Reanudar";
+"window.showMain" = "Mostrar ventana principal";
+"credentials.savedSecurely" = "Guardada de forma segura en el Llavero de macOS";
+"action.changePassword" = "Cambiar contraseña";
+"action.removeSavedPassword" = "Eliminar contraseña guardada";
 "error.title" = "Error en la operación";
 "error.unknown" = "Ha ocurrido un error desconocido.";
 "server.removeTitle" = "¿Eliminar este servidor guardado?";

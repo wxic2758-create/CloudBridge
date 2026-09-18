@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "रोकें";
 "action.resume" = "जारी रखें";
+"window.showMain" = "मुख्य विंडो दिखाएँ";
+"credentials.savedSecurely" = "macOS कीचेन में सुरक्षित रूप से सहेजा गया";
+"action.changePassword" = "पासवर्ड बदलें";
+"action.removeSavedPassword" = "सहेजा गया पासवर्ड हटाएँ";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Παύση";
 "action.resume" = "Συνέχιση";
+"window.showMain" = "Εμφάνιση κύριου παραθύρου";
+"credentials.savedSecurely" = "Αποθηκεύτηκε με ασφάλεια στο Keychain του macOS";
+"action.changePassword" = "Αλλαγή κωδικού";
+"action.removeSavedPassword" = "Αφαίρεση αποθηκευμένου κωδικού";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

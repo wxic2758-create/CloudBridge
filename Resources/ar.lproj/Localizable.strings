@@ -54,6 +54,10 @@
 "action.retry" = "إعادة المحاولة";
 "action.pause" = "إيقاف مؤقت";
 "action.resume" = "استئناف";
+"window.showMain" = "إظهار النافذة الرئيسية";
+"credentials.savedSecurely" = "محفوظ بأمان في سلسلة مفاتيح macOS";
+"action.changePassword" = "تغيير كلمة المرور";
+"action.removeSavedPassword" = "إزالة كلمة المرور المحفوظة";
 "error.title" = "فشل التشغيل";
 "error.unknown" = "حدث خطأ غير معروف.";
 "server.removeTitle" = "إزالة هذا الخادم المحفوظ؟";

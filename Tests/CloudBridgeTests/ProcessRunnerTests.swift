@@ -893,6 +893,12 @@ final class ServerNavigationTests: XCTestCase {
         XCTAssertEqual(model.downloadTasks.map(\.status), [.queued, .queued])
     }
 
+    func testDefaultDownloadDirectoryUsesTheUserDownloadsDirectory() {
+        let expected = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+
+        XCTAssertEqual(BrowserModel.defaultDownloadDirectory.standardizedFileURL, expected?.standardizedFileURL)
+    }
+
     func testExistingDownloadQueuesWithoutConfirmation() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Sæt på pause";
 "action.resume" = "Fortsæt";
+"window.showMain" = "Vis hovedvindu";
+"credentials.savedSecurely" = "Gemt sikkert i macOS-nøglering";
+"action.changePassword" = "Skift adgangskode";
+"action.removeSavedPassword" = "Fjern gemt adgangskode";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

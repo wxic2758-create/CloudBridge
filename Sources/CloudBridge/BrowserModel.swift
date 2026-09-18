@@ -48,7 +48,7 @@ final class BrowserModel {
     var editingPassword = ""
     var isChangingPassword = false
     var isShowingServerEditor = false
-    var localDownloadDirectory = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
+    var localDownloadDirectory = BrowserModel.defaultDownloadDirectory
     var currentPath = "."
     var items: [RemoteItem] = []
     var selectedItemIDs: Set<RemoteItem.ID> = []
@@ -97,7 +97,7 @@ final class BrowserModel {
         savedServers = initialServers ?? SavedServerStore.load(credentials: credentials)
         downloadTasks = initialDownloadTasks ?? (initialServers == nil ? DownloadHistoryStore.load() : [])
         localDownloadDirectory = SecurityScopedBookmarkStore.url(for: .downloadDirectory)
-            ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
+            ?? Self.defaultDownloadDirectory
 
         if let firstServer = savedServers.first {
             selectSavedServer(firstServer.id)
@@ -953,9 +953,7 @@ final class BrowserModel {
 
     private func needsExplicitSandboxAccess(for path: String) -> Bool {
         let standardizedPath = NSString(string: path).standardizingPath
-        let downloadsPath = FileManager.default.homeDirectoryForCurrentUser
-            .appending(path: "Downloads")
-            .path
+        let downloadsPath = Self.defaultDownloadDirectory.path
 
         if standardizedPath == NSString(string: downloadsPath).standardizingPath {
             return false
@@ -965,6 +963,13 @@ final class BrowserModel {
             path.contains("/.ssh/") ||
             (path.contains("/") == false && path.isEmpty == false) ||
             path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
+    }
+
+    /// The sandbox's home directory is the app container. Use the system Downloads
+    /// directory so an unconfigured download is always visible to the user.
+    static var defaultDownloadDirectory: URL {
+        FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
     }
 }
 

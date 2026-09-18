@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "หยุดชั่วคราว";
 "action.resume" = "ดำเนินการต่อ";
+"window.showMain" = "แสดงหน้าต่างหลัก";
+"credentials.savedSecurely" = "บันทึกอย่างปลอดภัยในพวงกุญแจ macOS";
+"action.changePassword" = "เปลี่ยนรหัสผ่าน";
+"action.removeSavedPassword" = "ลบรหัสผ่านที่บันทึกไว้";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

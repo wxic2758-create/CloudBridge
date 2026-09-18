@@ -54,6 +54,7 @@
 "action.retry" = "Retry";
 "action.pause" = "Pause";
 "action.resume" = "Resume";
+"window.showMain" = "Show Main Window";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

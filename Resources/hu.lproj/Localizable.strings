@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Szünet";
 "action.resume" = "Folytatás";
+"window.showMain" = "Főablak megjelenítése";
+"credentials.savedSecurely" = "Biztonságosan tárolva a macOS Kulcskarikában";
+"action.changePassword" = "Jelszó módosítása";
+"action.removeSavedPassword" = "Mentett jelszó eltávolítása";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

@@ -13,7 +13,7 @@ struct CloudBridgeApp: App {
     @State private var section = AppSection.servers
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             MainView(section: $section)
                 .environment(model)
                 .environment(\.locale, Locale(identifier: AppLanguage.resolved(language.selection)))
@@ -42,6 +42,7 @@ struct CloudBridgeApp: App {
 private struct CloudBridgeCommands: Commands {
     let model: BrowserModel
     @Binding var section: AppSection
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -86,6 +87,13 @@ private struct CloudBridgeCommands: Commands {
             Divider()
             Button(AppLanguage.text("tasks.clearCompleted"), action: model.clearDownloadHistory)
                 .disabled(!model.hasDownloadHistory)
+        }
+
+        CommandGroup(after: .windowList) {
+            Button(AppLanguage.text("window.showMain")) {
+                openWindow(id: "main")
+            }
+            .keyboardShortcut("0", modifiers: .command)
         }
     }
 }

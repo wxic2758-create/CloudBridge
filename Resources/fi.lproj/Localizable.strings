@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Keskeytä";
 "action.resume" = "Jatka";
+"window.showMain" = "Näytä pääikkuna";
+"credentials.savedSecurely" = "Tallennettu suojatusti macOS-avainnippuun";
+"action.changePassword" = "Vaihda salasana";
+"action.removeSavedPassword" = "Poista tallennettu salasana";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

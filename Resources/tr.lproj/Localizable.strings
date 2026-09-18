@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Duraklat";
 "action.resume" = "Sürdür";
+"window.showMain" = "Ana pencereyi göster";
+"credentials.savedSecurely" = "macOS Anahtarlık'ta güvenle saklandı";
+"action.changePassword" = "Parolayı değiştir";
+"action.removeSavedPassword" = "Kayıtlı parolayı kaldır";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

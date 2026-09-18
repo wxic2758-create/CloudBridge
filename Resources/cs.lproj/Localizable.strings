@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Pozastavit";
 "action.resume" = "Pokračovat";
+"window.showMain" = "Zobrazit hlavní okno";
+"credentials.savedSecurely" = "Bezpečně uloženo v Klíčence macOS";
+"action.changePassword" = "Změnit heslo";
+"action.removeSavedPassword" = "Odstranit uložené heslo";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";

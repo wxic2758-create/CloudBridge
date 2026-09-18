@@ -54,6 +54,10 @@
 "action.retry" = "Réessayer";
 "action.pause" = "Mettre en pause";
 "action.resume" = "Reprendre";
+"window.showMain" = "Afficher la fenêtre principale";
+"credentials.savedSecurely" = "Enregistré de façon sécurisée dans le trousseau macOS";
+"action.changePassword" = "Modifier le mot de passe";
+"action.removeSavedPassword" = "Supprimer le mot de passe enregistré";
 "error.title" = "Échec de l'opération";
 "error.unknown" = "Une erreur inconnue s'est produite.";
 "server.removeTitle" = "Supprimer ce serveur enregistré ?";

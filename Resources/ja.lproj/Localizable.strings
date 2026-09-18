@@ -54,6 +54,10 @@
 "action.retry" = "再試行";
 "action.pause" = "一時停止";
 "action.resume" = "再開";
+"window.showMain" = "メインウインドウを表示";
+"credentials.savedSecurely" = "macOSキーチェーンに安全に保存済み";
+"action.changePassword" = "パスワードを変更";
+"action.removeSavedPassword" = "保存済みのパスワードを削除";
 "error.title" = "操作に失敗しました";
 "error.unknown" = "不明なエラーが発生しました。";
 "server.removeTitle" = "この保存されたサーバーを削除しますか？";

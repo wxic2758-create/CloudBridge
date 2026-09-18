@@ -54,6 +54,10 @@
 "action.retry" = "Повторить";
 "action.pause" = "Приостановить";
 "action.resume" = "Продолжить";
+"window.showMain" = "Показать главное окно";
+"credentials.savedSecurely" = "Надежно сохранено в Связке ключей macOS";
+"action.changePassword" = "Изменить пароль";
+"action.removeSavedPassword" = "Удалить сохраненный пароль";
 "error.title" = "Операция не выполнена";
 "error.unknown" = "Произошла неизвестная ошибка.";
 "server.removeTitle" = "Удалить этот сохранённый сервер?";

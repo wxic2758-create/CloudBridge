@@ -54,6 +54,10 @@
 "action.retry" = "Retry";
 "action.pause" = "Tạm dừng";
 "action.resume" = "Tiếp tục";
+"window.showMain" = "Hiển thị cửa sổ chính";
+"credentials.savedSecurely" = "Đã lưu an toàn trong Chuỗi khóa macOS";
+"action.changePassword" = "Đổi mật khẩu";
+"action.removeSavedPassword" = "Xóa mật khẩu đã lưu";
 "error.title" = "Operation failed";
 "error.unknown" = "An unknown error occurred.";
 "server.removeTitle" = "Remove this saved server?";
