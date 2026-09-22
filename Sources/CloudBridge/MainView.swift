@@ -806,7 +806,7 @@ struct SettingsView: View {
                         SettingsIcon(kind: .folder)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(copy("settings.destination")).font(.headline)
-                            Text(model.localDownloadDirectory.path)
+                            Text(model.localDownloadDirectory?.path ?? copy("action.changeFolder"))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
@@ -814,7 +814,9 @@ struct SettingsView: View {
                                 .textSelection(.enabled)
                         }
                         Spacer(minLength: 16)
-                        Button(copy("action.changeFolder"), action: model.chooseLocalDirectory)
+                        Button(copy("action.changeFolder")) {
+                            _ = model.chooseLocalDirectory()
+                        }
                             .buttonStyle(.plain)
                             .disabled(model.isBusy)
                     }

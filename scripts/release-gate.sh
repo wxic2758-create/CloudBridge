@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT_DIR/CloudBridge.xcodeproj"
 SCHEME="CloudBridge"
 EXPECTED_VERSION="1.0"
-EXPECTED_BUILD="19"
+EXPECTED_BUILD="20"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cloudbridge-release-gate.XXXXXX")"
 DERIVED_DATA="$WORK_DIR/DerivedData"
 RESULT_BUNDLE="$WORK_DIR/CloudBridgeTests.xcresult"
@@ -54,7 +54,7 @@ grep -q 'productType = "com.apple.product-type.bundle.unit-test"' "$PROJECT/proj
 [[ "$(setting_values MARKETING_VERSION)" == "$EXPECTED_VERSION" ]] || fail "MARKETING_VERSION is not consistently $EXPECTED_VERSION"
 [[ "$(setting_values CURRENT_PROJECT_VERSION)" == "$EXPECTED_BUILD" ]] || fail "CURRENT_PROJECT_VERSION is not consistently $EXPECTED_BUILD"
 grep -q 'APP_VERSION="${APP_VERSION:-1.0}"' build-app.sh || fail "build-app.sh version does not match $EXPECTED_VERSION"
-grep -q 'BUILD_NUMBER="${BUILD_NUMBER:-19}"' build-app.sh || fail "build-app.sh build does not match $EXPECTED_BUILD"
+grep -q 'BUILD_NUMBER="${BUILD_NUMBER:-20}"' build-app.sh || fail "build-app.sh build does not match $EXPECTED_BUILD"
 python3 scripts/check-localization.py
 
 if ! command -v xcodebuild >/dev/null 2>&1 || ! xcodebuild -version >/dev/null 2>&1; then

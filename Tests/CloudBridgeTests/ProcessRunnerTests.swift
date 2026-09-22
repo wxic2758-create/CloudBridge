@@ -726,7 +726,7 @@ final class ServerNavigationTests: XCTestCase {
     }
 
     func testNewServerUsesEditableConnectionDefaults() {
-        let model = BrowserModel(initialServers: [])
+        let model = BrowserModel(initialServers: [], loadStoredDownloadDirectory: false)
 
         model.newServer()
 
@@ -893,10 +893,10 @@ final class ServerNavigationTests: XCTestCase {
         XCTAssertEqual(model.downloadTasks.map(\.status), [.queued, .queued])
     }
 
-    func testDefaultDownloadDirectoryUsesTheUserDownloadsDirectory() {
-        let expected = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+    func testDownloadDirectoryIsUnsetWithoutAStoredBookmark() {
+        let model = BrowserModel(initialServers: [])
 
-        XCTAssertEqual(BrowserModel.defaultDownloadDirectory.standardizedFileURL, expected?.standardizedFileURL)
+        XCTAssertNil(model.localDownloadDirectory)
     }
 
     func testExistingDownloadQueuesWithoutConfirmation() throws {

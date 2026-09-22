@@ -48,7 +48,7 @@ final class BrowserModel {
     var editingPassword = ""
     var isChangingPassword = false
     var isShowingServerEditor = false
-    var localDownloadDirectory = BrowserModel.defaultDownloadDirectory
+    var localDownloadDirectory: URL?
     var currentPath = "."
     var items: [RemoteItem] = []
     var selectedItemIDs: Set<RemoteItem.ID> = []
@@ -91,13 +91,15 @@ final class BrowserModel {
     init(
         initialServers: [SavedServer]? = nil,
         initialDownloadTasks: [DownloadTask]? = nil,
+        loadStoredDownloadDirectory: Bool = true,
         credentials: any ServerPasswordStoring = ServerPasswordStore()
     ) {
         self.credentials = credentials
         savedServers = initialServers ?? SavedServerStore.load(credentials: credentials)
         downloadTasks = initialDownloadTasks ?? (initialServers == nil ? DownloadHistoryStore.load() : [])
-        localDownloadDirectory = SecurityScopedBookmarkStore.url(for: .downloadDirectory)
-            ?? Self.defaultDownloadDirectory
+        localDownloadDirectory = loadStoredDownloadDirectory
+            ? SecurityScopedBookmarkStore.url(for: .downloadDirectory)
+            : nil
 
         if let firstServer = savedServers.first {
             selectSavedServer(firstServer.id)
@@ -146,8 +148,9 @@ final class BrowserModel {
     func existingLocalDownload(for item: RemoteItem) -> URL? {
         var names = [item.localDownloadName]
         if item.localDownloadName != item.name { names.append(item.name) }
+        guard let localDownloadDirectory else { return nil }
         return names.lazy
-            .map { self.localDownloadDirectory.appending(path: $0) }
+            .map { localDownloadDirectory.appending(path: $0) }
             .first { FileManager.default.fileExists(atPath: $0.path) }
     }
 
@@ -552,6 +555,10 @@ final class BrowserModel {
         let acceptedItems = items.filter { $0.name != ".." }
         guard canQueueDownloads, !acceptedItems.isEmpty else { return }
 
+        if localDownloadDirectory == nil {
+            guard chooseLocalDirectory() else { return }
+        }
+
         enqueueDownloads(acceptedItems)
     }
 
@@ -583,13 +590,15 @@ final class BrowserModel {
 
     private func runDownloadQueue() {
         runDownload { [self] in
+            guard let localDownloadDirectory = self.localDownloadDirectory else {
+                throw BrowserModelError.securityScopedAccessRequired(AppLanguage.text("settings.folderHelp"))
+            }
             let accessURL = SecurityScopedBookmarkStore.startAccessingURL(
                 for: .downloadDirectory,
-                matchingPath: self.localDownloadDirectory.path
+                matchingPath: localDownloadDirectory.path
             )
-            if accessURL == nil,
-               self.needsExplicitSandboxAccess(for: self.localDownloadDirectory.path) {
-                throw BrowserModelError.securityScopedAccessRequired(self.localDownloadDirectory.path)
+            if accessURL == nil {
+                throw BrowserModelError.securityScopedAccessRequired(localDownloadDirectory.path)
             }
             defer {
                 accessURL?.stopAccessingSecurityScopedResource()
@@ -609,7 +618,7 @@ final class BrowserModel {
                 do {
                     let destination = try await self.client.download(
                         job.item,
-                        to: self.localDownloadDirectory,
+                        to: localDownloadDirectory,
                         processControl: processControl
                     ) { [weak self, taskID = job.taskID] progress in
                         await MainActor.run {
@@ -718,7 +727,8 @@ final class BrowserModel {
         runDownloadQueue()
     }
 
-    func chooseLocalDirectory() {
+    @discardableResult
+    func chooseLocalDirectory() -> Bool {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -729,11 +739,13 @@ final class BrowserModel {
             localDownloadDirectory = url
             do {
                 try SecurityScopedBookmarkStore.save(url, for: .downloadDirectory)
+                return true
             } catch {
                 errorMessage = error.localizedDescription
                 statusMessage = error.localizedDescription
             }
         }
+        return false
     }
 
     func reveal(_ task: DownloadTask) {
@@ -757,7 +769,7 @@ final class BrowserModel {
            FileManager.default.fileExists(atPath: destination.path) {
             let accessURL = SecurityScopedBookmarkStore.startAccessingURL(
                 for: .downloadDirectory,
-                matchingPath: localDownloadDirectory.path
+                matchingPath: localDownloadDirectory?.path ?? destination.deletingLastPathComponent().path
             )
             defer { accessURL?.stopAccessingSecurityScopedResource() }
             do {
@@ -951,26 +963,6 @@ final class BrowserModel {
         return path.isEmpty ? "." : path
     }
 
-    private func needsExplicitSandboxAccess(for path: String) -> Bool {
-        let standardizedPath = NSString(string: path).standardizingPath
-        let downloadsPath = Self.defaultDownloadDirectory.path
-
-        if standardizedPath == NSString(string: downloadsPath).standardizingPath {
-            return false
-        }
-
-        return path.hasPrefix("~/.ssh") ||
-            path.contains("/.ssh/") ||
-            (path.contains("/") == false && path.isEmpty == false) ||
-            path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
-    }
-
-    /// The sandbox's home directory is the app container. Use the system Downloads
-    /// directory so an unconfigured download is always visible to the user.
-    static var defaultDownloadDirectory: URL {
-        FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
-            ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
-    }
 }
 
 private enum SecurityScopedBookmarkKind: String {
