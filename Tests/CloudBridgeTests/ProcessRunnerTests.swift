@@ -289,6 +289,15 @@ final class ProcessRunnerTests: XCTestCase {
         }
     }
 
+    func testDirectoryProgressMeasuresFilesInStagingTree() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory.appendingPathComponent("nested"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try Data(repeating: 1, count: 17).write(to: directory.appendingPathComponent("nested/file.bin"))
+
+        XCTAssertEqual(DownloadProgressSampler.directorySize(at: directory), 17)
+    }
+
     func testQueuedDownloadOnlyAcceptsProgressAfterStarting() {
         let sample = DownloadProgress(
             bytesTransferred: 50,

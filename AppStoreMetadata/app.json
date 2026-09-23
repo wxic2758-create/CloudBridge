@@ -3,7 +3,7 @@
   "bundleId": "com.dazhang.CloudBridge",
   "appStoreId": "6787467520",
   "marketingVersion": "1.0",
-  "targetBuild": "18",
+  "targetBuild": "21",
   "primaryLanguage": "en-US",
   "primaryCategory": "Developer Tools",
   "secondaryCategory": "Productivity",
@@ -16,4 +16,3 @@
   "supportURL": "https://wxic2758-create.github.io/CloudBridge/support.html",
   "privacyPolicyURL": "https://wxic2758-create.github.io/CloudBridge/privacy.html"
 }
-

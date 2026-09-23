@@ -639,6 +639,9 @@ struct MainView: View {
         if let bytes = task.bytesTransferred, bytes > 0 {
             return CompactFileSizeFormatter.string(fromByteCount: bytes)
         }
+        if task.status == .downloading {
+            return copy("tasks.transferring")
+        }
         return "0%"
     }
 

@@ -134,8 +134,13 @@ actor SFTPClient {
             }
         }
         if item.isDirectory {
-            // Directory inode sizes are not transferred contents. No recursive scans or fake total.
-            try await transfer()
+            // Directory inode sizes are not useful totals. Measure the local
+            // staging tree so long recursive transfers still show activity.
+            try await DownloadProgressSampler.monitorDirectory(
+                at: stagedFile,
+                progress: progress,
+                operation: transfer
+            )
         } else {
             try await DownloadProgressSampler.monitor(file: stagedFile,
                 totalBytes: item.kind == .file ? item.size : nil, progress: progress, operation: transfer)
@@ -373,10 +378,18 @@ actor SFTPClient {
     private func makeSFTPArguments(for profile: ServerProfile, batchMode: Bool) -> [String] {
         var arguments = [
             "-q",
+            // Keep enough data in flight for high-latency servers without
+            // waiting for multi-megabyte writes before reporting progress.
+            "-B", "262144",
+            "-R", "128",
             "-P", "\(profile.port)",
             "-o", "StrictHostKeyChecking=accept-new",
             "-o", "UserKnownHostsFile=\(Self.knownHostsPath())",
             "-o", "ConnectTimeout=30",
+            "-o", "ServerAliveInterval=15",
+            "-o", "ServerAliveCountMax=3",
+            "-o", "IPQoS=throughput",
+            "-o", "RekeyLimit=4G 1h",
             "-o", "ControlMaster=auto",
             "-o", "ControlPersist=600",
             "-o", "ControlPath=\(Self.controlPath())"

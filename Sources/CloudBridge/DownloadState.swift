@@ -108,10 +108,60 @@ struct DownloadProgressSampler: Sendable {
         }
     }
 
+    static func monitorDirectory(
+        at directory: URL,
+        progress: (@Sendable (DownloadProgress) async -> Void)?,
+        isolation: isolated (any Actor)? = #isolation,
+        operation: () async throws -> Void
+    ) async throws {
+        try Task.checkCancellation()
+        let monitor = Task {
+            var sampler = DownloadProgressSampler(totalBytes: nil)
+            while !Task.isCancelled {
+                await progress?(sampler.sample(bytes: directorySize(at: directory)))
+                do { try await Task.sleep(for: .milliseconds(250)) }
+                catch { break }
+            }
+            return sampler
+        }
+        do {
+            try await operation()
+            try Task.checkCancellation()
+            monitor.cancel()
+            var finalSampler = await monitor.value
+            let final = finalSampler.sample(bytes: directorySize(at: directory))
+            await progress?(DownloadProgress(bytesTransferred: final.bytesTransferred, totalBytes: nil,
+                                             speedBytesPerSecond: nil, estimatedRemainingSeconds: nil))
+        } catch {
+            monitor.cancel()
+            _ = await monitor.value
+            throw error
+        }
+    }
+
     static func fileSize(at url: URL) -> Int64? {
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
               attributes[.type] as? FileAttributeType == .typeRegular else { return nil }
         return (attributes[.size] as? NSNumber)?.int64Value
+    }
+
+    static func directorySize(at url: URL) -> Int64? {
+        guard let enumerator = FileManager.default.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+            options: []
+        ) else { return nil }
+
+        var total: Int64 = 0
+        var foundFile = false
+        for case let fileURL as URL in enumerator {
+            guard let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
+                  values.isRegularFile == true,
+                  let size = values.fileSize else { continue }
+            foundFile = true
+            total += Int64(size)
+        }
+        return foundFile ? total : 0
     }
 }
 
