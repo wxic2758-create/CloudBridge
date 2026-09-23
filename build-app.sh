@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$ROOT_DIR/.build/release"
+BUILD_DIR="$ROOT_DIR/.build/xcode-release/Build/Products/Release"
 APP_NAME="${APP_NAME:-CloudBridge}"
 BUNDLE_ID="${BUNDLE_ID:-com.dazhang.CloudBridge}"
 APP_VERSION="${APP_VERSION:-1.0}"
@@ -26,11 +26,21 @@ else
     PYTHON="python3"
 fi
 "$PYTHON" "$ROOT_DIR/scripts/generate-icon.py"
-swift build -c release
+xcodebuild \
+    -project "$ROOT_DIR/CloudBridge.xcodeproj" \
+    -scheme CloudBridge \
+    -configuration Release \
+    -sdk macosx \
+    -derivedDataPath "$ROOT_DIR/.build/xcode-release" \
+    ARCHS="arm64 x86_64" \
+    ONLY_ACTIVE_ARCH=NO \
+    CODE_SIGNING_ALLOWED=NO \
+    CODE_SIGNING_REQUIRED=NO \
+    build >/dev/null
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
-cp "$BUILD_DIR/CloudBridge" "$MACOS_DIR/$APP_NAME"
+cp "$BUILD_DIR/CloudBridge.app/Contents/MacOS/CloudBridge" "$MACOS_DIR/$APP_NAME"
 iconutil -c icns "$ROOT_DIR/Assets/CloudBridge.iconset" -o "$RESOURCES_DIR/CloudBridge.icns"
 cp "$ROOT_DIR/Resources/ssh-askpass.sh" "$RESOURCES_DIR/ssh-askpass.sh"
 cp "$ROOT_DIR/PrivacyInfo.xcprivacy" "$RESOURCES_DIR/PrivacyInfo.xcprivacy"
