@@ -669,7 +669,11 @@ extension PreviewTextLoaderTests {
 final class ServerNavigationTests: XCTestCase {
     private final class MemoryCredentials: ServerPasswordStoring, @unchecked Sendable {
         var values: [UUID: String] = [:]
-        func readPassword(serverID: UUID) throws -> String? { values[serverID] }
+        private(set) var readCount = 0
+        func readPassword(serverID: UUID) throws -> String? {
+            readCount += 1
+            return values[serverID]
+        }
         func setPassword(_ password: String, serverID: UUID) throws { values[serverID] = password }
         func deletePassword(serverID: UUID) throws { values.removeValue(forKey: serverID) }
     }
@@ -718,6 +722,19 @@ final class ServerNavigationTests: XCTestCase {
         model.editSelectedServer()
         XCTAssertEqual(model.editingPassword, "")
         XCTAssertTrue(model.hasSavedPassword(for: server))
+    }
+
+    func testPasswordReadsAreCachedDuringConnectionSetup() throws {
+        let server = SavedServer(host: "example.invalid", username: "root")
+        let credentials = MemoryCredentials()
+        try credentials.setPassword("local-secret", serverID: server.id)
+        let model = BrowserModel(initialServers: [server], credentials: credentials)
+
+        model.editSelectedServer()
+        _ = model.hasSavedPassword(for: server)
+        _ = model.preparedProfileForConnection()
+
+        XCTAssertEqual(credentials.readCount, 1)
     }
 
     func testReconnectRestoresPasswordFromKeychain() throws {

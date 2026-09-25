@@ -64,6 +64,12 @@ final class BrowserModel {
 
     private let client = SFTPClient()
     private let credentials: any ServerPasswordStoring
+    private enum CachedPassword {
+        case value(String)
+        case missing
+        case unavailable
+    }
+    private var passwordCache: [SavedServer.ID: CachedPassword] = [:]
     var previewURL: URL?
 
     func dismissPreview() {
@@ -223,6 +229,7 @@ final class BrowserModel {
         do {
             if !editingPassword.isEmpty {
                 try credentials.setPassword(editingPassword, serverID: server.id)
+                passwordCache[server.id] = .value(editingPassword)
             } else if !existingServer {
                 throw BrowserModelError.missingPassword
             }
@@ -283,6 +290,7 @@ final class BrowserModel {
         clearPendingConnection()
         do {
             try credentials.deletePassword(serverID: selectedServerID)
+            passwordCache[selectedServerID] = .missing
         } catch {
             let message = AppLanguage.text("credentials.removeFailed")
             errorMessage = message
@@ -337,6 +345,7 @@ final class BrowserModel {
         guard savedServers.contains(where: { $0.id == editingServer.id }) else { return }
         do {
             try credentials.deletePassword(serverID: editingServer.id)
+            passwordCache[editingServer.id] = .missing
             isChangingPassword = true
             editingPassword = ""
         } catch {
@@ -347,11 +356,39 @@ final class BrowserModel {
     }
 
     func hasSavedPassword(for server: SavedServer) -> Bool {
-        (try? credentials.readPassword(serverID: server.id))?.isEmpty == false
+        if case let .value(password) = cachedPassword(for: server) {
+            return password.isEmpty == false
+        }
+        return false
     }
 
     private func password(for server: SavedServer) -> String {
-        (try? credentials.readPassword(serverID: server.id)) ?? server.password
+        switch cachedPassword(for: server) {
+        case .value(let password):
+            return password
+        case .missing, .unavailable:
+            return server.password
+        }
+    }
+
+    private func cachedPassword(for server: SavedServer) -> CachedPassword {
+        if let cached = passwordCache[server.id] {
+            return cached
+        }
+
+        do {
+            let cached: CachedPassword
+            if let password = try credentials.readPassword(serverID: server.id) {
+                cached = .value(password)
+            } else {
+                cached = .missing
+            }
+            passwordCache[server.id] = cached
+            return cached
+        } catch {
+            passwordCache[server.id] = .unavailable
+            return .unavailable
+        }
     }
 
     func connect() {
