@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Não foi possível remover a senha salva das Chaves do macOS.";
 "settings.support" = "Suporte";
 "settings.supportHint" = "Abre o suporte do CloudBridge no navegador padrão.";
+"tasks.waiting" = "Aguardando download";

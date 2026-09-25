@@ -215,3 +215,4 @@
 "credentials.removeFailed" = "Não foi possível remover a palavra-passe guardada do Porta-chaves do macOS.";
 "settings.support" = "Suporte";
 "settings.supportHint" = "Abre o suporte do CloudBridge no navegador predefinido.";
+"tasks.waiting" = "A aguardar transferência";

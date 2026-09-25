@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Das gespeicherte Passwort konnte nicht aus dem macOS-Schlüsselbund entfernt werden.";
 "settings.support" = "Support";
 "settings.supportHint" = "Öffnet die CloudBridge-Supportseite im Standardbrowser.";
+"tasks.waiting" = "Warten auf Download";

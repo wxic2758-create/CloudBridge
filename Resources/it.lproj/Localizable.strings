@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Impossibile rimuovere la password salvata dal Portachiavi di macOS.";
 "settings.support" = "Supporto";
 "settings.supportHint" = "Apre il supporto CloudBridge nel browser predefinito.";
+"tasks.waiting" = "In attesa del download";

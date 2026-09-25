@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "A mentett jelszó nem távolítható el a macOS Kulcskarikából.";
 "settings.support" = "Támogatás";
 "settings.supportHint" = "Megnyitja a CloudBridge támogatási oldalát az alapértelmezett böngészőben.";
+"tasks.waiting" = "Letöltésre vár";

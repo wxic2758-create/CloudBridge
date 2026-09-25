@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Spremljenu lozinku nije moguće ukloniti iz macOS privjeska ključeva.";
 "settings.support" = "Podrška";
 "settings.supportHint" = "Otvara podršku za CloudBridge u zadanom pregledniku.";
+"tasks.waiting" = "Čeka preuzimanje";

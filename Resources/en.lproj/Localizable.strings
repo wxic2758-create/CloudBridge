@@ -217,3 +217,4 @@
 "credentials.writeFailed" = "Unable to save the password in macOS Keychain.";
 "credentials.removeFailed" = "Unable to remove the saved password from macOS Keychain.";
 "settings.supportHint" = "Opens CloudBridge support in your default browser.";
+"tasks.waiting" = "Waiting to download";

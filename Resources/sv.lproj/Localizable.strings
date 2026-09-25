@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Det sparade lösenordet kunde inte tas bort från macOS-nyckelringen.";
 "settings.support" = "Support";
 "settings.supportHint" = "Öppnar CloudBridge-support i standardwebbläsaren.";
+"tasks.waiting" = "Väntar på hämtning";

@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Không thể xóa mật khẩu đã lưu khỏi Chuỗi khóa macOS.";
 "settings.support" = "Hỗ trợ";
 "settings.supportHint" = "Mở trang hỗ trợ CloudBridge trong trình duyệt mặc định.";
+"tasks.waiting" = "Đang chờ tải xuống";

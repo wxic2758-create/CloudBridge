@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Tidak dapat menghapus kata sandi tersimpan dari Rantai Kunci macOS.";
 "settings.support" = "Dukungan";
 "settings.supportHint" = "Membuka dukungan CloudBridge di browser default.";
+"tasks.waiting" = "Menunggu diunduh";

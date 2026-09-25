@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Impossible de supprimer le mot de passe enregistré du Trousseau macOS.";
 "settings.support" = "Assistance";
 "settings.supportHint" = "Ouvre l’assistance CloudBridge dans votre navigateur par défaut.";
+"tasks.waiting" = "En attente du téléchargement";

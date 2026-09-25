@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Не удалось удалить сохранённый пароль из Связки ключей macOS.";
 "settings.support" = "Поддержка";
 "settings.supportHint" = "Открывает страницу поддержки CloudBridge в браузере по умолчанию.";
+"tasks.waiting" = "Ожидание загрузки";

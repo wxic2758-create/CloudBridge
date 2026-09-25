@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Parola salvată nu poate fi eliminată din Portcheiul macOS.";
 "settings.support" = "Asistență";
 "settings.supportHint" = "Deschide pagina de asistență CloudBridge în browserul implicit.";
+"tasks.waiting" = "Se așteaptă descărcarea";

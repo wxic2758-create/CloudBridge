@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Δεν ήταν δυνατή η κατάργηση του αποθηκευμένου κωδικού από το Keychain του macOS.";
 "settings.support" = "Υποστήριξη";
 "settings.supportHint" = "Ανοίγει την υποστήριξη του CloudBridge στο προεπιλεγμένο πρόγραμμα περιήγησης.";
+"tasks.waiting" = "Σε αναμονή για λήψη";

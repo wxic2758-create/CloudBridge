@@ -559,6 +559,7 @@ struct MainView: View {
                 .help(copy("action.cancel"))
                 .accessibilityLabel(copy("action.cancel"))
             case .completed:
+                downloadProgress(for: task)
                 Image(systemName: removed ? "exclamationmark.circle" : "checkmark.circle.fill")
                     .foregroundStyle(removed ? Color.secondary : Finish.lilac)
                     .help(copy(removed ? "tasks.fileRemoved" : "tasks.done"))
@@ -609,10 +610,23 @@ struct MainView: View {
     }
 
     private func downloadProgress(for task: DownloadTask) -> some View {
-        let awaitingFirstByte = task.status == .downloading && (task.bytesTransferred ?? 0) == 0
+        let hasMeasuredTotal = task.totalBytes.map { $0 > 0 } ?? false
+        let isIndeterminate = task.status == .downloading && !hasMeasuredTotal
+        let label: String = switch task.status {
+        case .queued:
+            copy("tasks.waiting")
+        case .completed:
+            copy("tasks.done")
+        case .paused:
+            copy("action.pause")
+        case .downloading:
+            hasMeasuredTotal ? downloadProgressText(task) : copy("tasks.transferring")
+        case .cancelled, .failed:
+            downloadProgressText(task)
+        }
         return HStack(spacing: 4) {
             Group {
-                if awaitingFirstByte {
+                if isIndeterminate {
                     ProgressView().controlSize(.small)
                 } else {
                     Color.clear
@@ -621,25 +635,26 @@ struct MainView: View {
             .frame(width: 14, height: 14)
             .accessibilityHidden(true)
 
-            Text(downloadProgressText(task))
+            Text(label)
                 .font(.body.weight(.semibold))
                 .monospacedDigit()
-                .frame(width: 52, alignment: .trailing)
+                .lineLimit(1)
+                .frame(width: 96, alignment: .trailing)
         }
-            .frame(width: 70, alignment: .trailing)
+            .frame(width: 114, alignment: .trailing)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(copy(awaitingFirstByte ? "tasks.transferring" : "tasks.progress"))
-            .accessibilityValue(downloadProgressText(task))
+            .accessibilityLabel(label)
+            .accessibilityValue(label)
     }
 
     private func downloadProgressText(_ task: DownloadTask) -> String {
+        if task.status == .completed {
+            return copy("tasks.done")
+        }
         if let progress = task.progress {
             return progress.formatted(.percent.precision(.fractionLength(0)))
         }
-        if let bytes = task.bytesTransferred, bytes > 0 {
-            return CompactFileSizeFormatter.string(fromByteCount: bytes)
-        }
-        if task.status == .downloading {
+        if task.status == .downloading || task.status == .paused {
             return copy("tasks.transferring")
         }
         return "0%"

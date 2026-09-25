@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "保存済みパスワードを macOSキーチェーンから削除できません。";
 "settings.support" = "サポート";
 "settings.supportHint" = "CloudBridge のサポートページをデフォルトのブラウザで開きます。";
+"tasks.waiting" = "ダウンロード待ち";

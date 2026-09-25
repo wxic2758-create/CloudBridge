@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "ไม่สามารถลบรหัสผ่านที่บันทึกไว้ออกจากพวงกุญแจ macOS ได้";
 "settings.support" = "บริการช่วยเหลือ";
 "settings.supportHint" = "เปิดหน้าบริการช่วยเหลือของ CloudBridge ในเบราว์เซอร์เริ่มต้น";
+"tasks.waiting" = "รอดาวน์โหลด";

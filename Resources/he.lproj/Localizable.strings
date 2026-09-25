@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "לא ניתן להסיר את הסיסמה השמורה מצרור המפתחות של macOS.";
 "settings.support" = "תמיכה";
 "settings.supportHint" = "פותח את דף התמיכה של CloudBridge בדפדפן ברירת המחדל.";
+"tasks.waiting" = "ממתין להורדה";

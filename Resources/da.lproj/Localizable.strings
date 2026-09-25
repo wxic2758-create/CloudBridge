@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Den gemte adgangskode kunne ikke fjernes fra macOS-nøgleringen.";
 "settings.support" = "Support";
 "settings.supportHint" = "Åbner CloudBridge-support i din standardbrowser.";
+"tasks.waiting" = "Venter på download";

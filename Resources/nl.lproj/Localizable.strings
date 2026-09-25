@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Het opgeslagen wachtwoord kan niet uit de macOS-sleutelhanger worden verwijderd.";
 "settings.support" = "Ondersteuning";
 "settings.supportHint" = "Opent CloudBridge-ondersteuning in je standaardbrowser.";
+"tasks.waiting" = "Wachten op download";

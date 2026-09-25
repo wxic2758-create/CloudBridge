@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Nie można usunąć zapisanego hasła z pęku kluczy macOS.";
 "settings.support" = "Pomoc";
 "settings.supportHint" = "Otwiera stronę pomocy CloudBridge w domyślnej przeglądarce.";
+"tasks.waiting" = "Oczekiwanie na pobranie";

@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Det lagrede passordet kunne ikke fjernes fra macOS-nøkkelringen.";
 "settings.support" = "Kundestøtte";
 "settings.supportHint" = "Åpner CloudBridge-kundestøtte i standardnettleseren.";
+"tasks.waiting" = "Venter på nedlasting";

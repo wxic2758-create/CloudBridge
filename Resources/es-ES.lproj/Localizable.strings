@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "No se puede eliminar la contraseña guardada del Llavero de macOS.";
 "settings.support" = "Soporte";
 "settings.supportHint" = "Abre el soporte de CloudBridge en el navegador predeterminado.";
+"tasks.waiting" = "En espera de descarga";

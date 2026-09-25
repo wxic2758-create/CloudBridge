@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Uložené heslo sa nepodarilo odstrániť z Kľúčenky macOS.";
 "settings.support" = "Podpora";
 "settings.supportHint" = "Otvorí podporu CloudBridge v predvolenom prehliadači.";
+"tasks.waiting" = "Čaká na stiahnutie";

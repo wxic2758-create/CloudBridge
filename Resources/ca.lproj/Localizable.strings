@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "No s’ha pogut eliminar la contrasenya desada del Clauer del macOS.";
 "settings.support" = "Assistència";
 "settings.supportHint" = "Obre l’assistència de CloudBridge al navegador predeterminat.";
+"tasks.waiting" = "Esperant la baixada";

@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "सहेजे गए पासवर्ड को macOS Keychain से हटाया नहीं जा सका।";
 "settings.support" = "सहायता";
 "settings.supportHint" = "CloudBridge सहायता को डिफ़ॉल्ट ब्राउज़र में खोलता है।";
+"tasks.waiting" = "डाउनलोड की प्रतीक्षा";

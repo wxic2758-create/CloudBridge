@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "無法從 macOS 鑰匙圈中移除已儲存的密碼。";
 "settings.support" = "支援";
 "settings.supportHint" = "在預設瀏覽器中開啟 CloudBridge 支援頁面。";
+"tasks.waiting" = "等待下載";

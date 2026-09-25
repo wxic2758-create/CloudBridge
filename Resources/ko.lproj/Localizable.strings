@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "저장된 암호를 macOS 키체인에서 제거할 수 없습니다.";
 "settings.support" = "지원";
 "settings.supportHint" = "기본 브라우저에서 CloudBridge 지원 페이지를 엽니다.";
+"tasks.waiting" = "다운로드 대기 중";

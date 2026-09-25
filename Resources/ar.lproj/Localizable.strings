@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "تعذر إزالة كلمة المرور المحفوظة من سلسلة مفاتيح macOS.";
 "settings.support" = "الدعم";
 "settings.supportHint" = "يفتح صفحة دعم CloudBridge في المتصفح الافتراضي.";
+"tasks.waiting" = "في انتظار التنزيل";

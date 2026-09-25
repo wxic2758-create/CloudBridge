@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Tidak dapat mengalih keluar kata laluan tersimpan daripada Rantai Kunci macOS.";
 "settings.support" = "Sokongan";
 "settings.supportHint" = "Membuka sokongan CloudBridge dalam pelayar lalai.";
+"tasks.waiting" = "Menunggu muat turun";

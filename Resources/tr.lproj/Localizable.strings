@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Kayıtlı parola macOS Anahtar Zinciri’nden kaldırılamadı.";
 "settings.support" = "Destek";
 "settings.supportHint" = "CloudBridge destek sayfasını varsayılan tarayıcınızda açar.";
+"tasks.waiting" = "İndirme bekleniyor";

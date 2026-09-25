@@ -216,3 +216,4 @@
 "credentials.removeFailed" = "Tallennettua salasanaa ei voitu poistaa macOS-avaimenperästä.";
 "settings.support" = "Tuki";
 "settings.supportHint" = "Avaa CloudBridge-tuen oletusselaimessa.";
+"tasks.waiting" = "Odottaa latausta";
