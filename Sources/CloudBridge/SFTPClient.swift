@@ -143,7 +143,12 @@ actor SFTPClient {
             )
         } else {
             try await DownloadProgressSampler.monitor(file: stagedFile,
-                totalBytes: item.kind == .file ? item.size : nil, progress: progress, operation: transfer)
+                // Some servers expose a regular file as an unknown type or
+                // symlink in their listing. A known size is still sufficient
+                // to provide an accurate percentage for the transfer.
+                totalBytes: item.isDirectory ? nil : item.size,
+                progress: progress,
+                operation: transfer)
         }
         try Task.checkCancellation()
         let destination = conflictStrategy == .rename ? uniqueDestinationURL(for: item.localDownloadName, in: localDirectory) : requested
