@@ -217,3 +217,8 @@
 "settings.support" = "Podpora";
 "settings.supportHint" = "Otevře podporu CloudBridge ve výchozím prohlížeči.";
 "tasks.waiting" = "Čeká se na stažení";
+"folderSize.calculate" = "Vypočítat velikost složky";
+"folderSize.cancel" = "Zrušit výpočet velikosti";
+"folderSize.calculating" = "Počítání…";
+"folderSize.cached" = "V mezipaměti";
+"folderSize.incomplete" = "Neúplné";

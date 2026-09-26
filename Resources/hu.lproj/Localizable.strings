@@ -217,3 +217,8 @@
 "settings.support" = "Támogatás";
 "settings.supportHint" = "Megnyitja a CloudBridge támogatási oldalát az alapértelmezett böngészőben.";
 "tasks.waiting" = "Letöltésre vár";
+"folderSize.calculate" = "Mappaméret kiszámítása";
+"folderSize.cancel" = "Számítás megszakítása";
+"folderSize.calculating" = "Számítás…";
+"folderSize.cached" = "Gyorsítótárazott";
+"folderSize.incomplete" = "Hiányos";

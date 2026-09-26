@@ -217,3 +217,8 @@
 "settings.support" = "Podrška";
 "settings.supportHint" = "Otvara podršku za CloudBridge u zadanom pregledniku.";
 "tasks.waiting" = "Čeka preuzimanje";
+"folderSize.calculate" = "Izračunaj veličinu mape";
+"folderSize.cancel" = "Otkaži izračun";
+"folderSize.calculating" = "Izračunavanje…";
+"folderSize.cached" = "U predmemoriji";
+"folderSize.incomplete" = "Nepotpuno";

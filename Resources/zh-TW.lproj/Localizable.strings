@@ -217,3 +217,8 @@
 "settings.support" = "支援";
 "settings.supportHint" = "在預設瀏覽器中開啟 CloudBridge 支援頁面。";
 "tasks.waiting" = "等待下載";
+"folderSize.calculate" = "計算檔案夾大小";
+"folderSize.cancel" = "取消大小計算";
+"folderSize.calculating" = "正在計算…";
+"folderSize.cached" = "快取結果";
+"folderSize.incomplete" = "計算不完整";

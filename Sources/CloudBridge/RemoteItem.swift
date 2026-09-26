@@ -1,5 +1,54 @@
 import Foundation
 
+struct FolderSizeResult: Codable, Sendable, Equatable {
+    var bytes: Int64 = 0
+    var isComplete = true
+    var measuredAt = Date()
+}
+
+enum FolderSizeCalculator {
+    // Serial requests keep recursive scans from flooding the server.
+    static func calculate(
+        path: String,
+        isolation: isolated (any Actor)? = #isolation,
+        list: (String) async throws -> [RemoteItem]
+    ) async throws -> FolderSizeResult {
+        var result = FolderSizeResult()
+        var pending = [path]
+        var visited = Set<String>()
+        while let directory = pending.popLast() {
+            try Task.checkCancellation()
+            guard visited.insert(directory).inserted else { continue }
+            guard visited.count <= 10_000 else {
+                result.isComplete = false
+                break
+            }
+            do {
+                let items = try await list(directory)
+                for item in items where item.name != "." && item.name != ".." {
+                    if item.isDirectory {
+                        pending.append(item.path)
+                    } else if item.kind == .file, let size = item.size, size >= 0 {
+                        let sum = result.bytes.addingReportingOverflow(size)
+                        if sum.overflow { result.isComplete = false }
+                        else { result.bytes = sum.partialValue }
+                    } else {
+                        result.isComplete = false
+                    }
+                }
+            } catch {
+                try Task.checkCancellation()
+                if error is CancellationError { throw error }
+                if let error = error as? ProcessRunnerError, error == .cancelled { throw error }
+                result.isComplete = false
+            }
+        }
+        try Task.checkCancellation()
+        result.measuredAt = Date()
+        return result
+    }
+}
+
 struct RemoteItem: Identifiable, Equatable {
     enum Kind: Equatable {
         case directory

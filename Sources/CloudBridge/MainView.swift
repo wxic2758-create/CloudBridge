@@ -384,9 +384,25 @@ struct MainView: View {
                         }
                     }
                     TableColumn(copy("file.size")) { item in
-                        let size = item.size.map { CompactFileSizeFormatter.string(fromByteCount: $0) } ?? "—"
-                        Text(size)
-                            .foregroundStyle(.secondary).monospacedDigit()
+                        if item.isDirectory {
+                            let result = model.folderSize(for: item)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(result.map { CompactFileSizeFormatter.string(fromByteCount: $0.bytes) } ?? "—")
+                                    .monospacedDigit()
+                                if model.isCalculatingSize(item) {
+                                    Text(copy("folderSize.calculating")).font(.caption2)
+                                } else if let result {
+                                    Text(copy(result.isComplete ? "folderSize.cached" : "folderSize.incomplete"))
+                                        .font(.caption2)
+                                }
+                            }
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .help(result.map { copy($0.isComplete ? "folderSize.cached" : "folderSize.incomplete") + " · " + $0.measuredAt.formatted() } ?? copy("folderSize.calculate"))
+                        } else {
+                            Text(item.size.map { CompactFileSizeFormatter.string(fromByteCount: $0) } ?? "—")
+                                .foregroundStyle(.secondary).monospacedDigit()
+                        }
                     }.width(110)
                     TableColumn(copy("file.modified")) { item in
                         Text(item.modifiedAt?.formatted(date: .abbreviated, time: .shortened) ?? "—").foregroundStyle(.secondary)
@@ -403,6 +419,14 @@ struct MainView: View {
                     if selected.count == 1, let item = selected.first {
                         Button(copy("action.open")) { model.activate(item) }.disabled(model.isBusy)
                         Button(copy("action.preview")) { model.preview(item) }.disabled(model.isBusy || item.isDirectory)
+                        if item.isDirectory {
+                            if model.isCalculatingSize(item) {
+                                Button(copy("folderSize.cancel")) { model.cancelFolderSize(item) }
+                            } else {
+                                Button(copy("folderSize.calculate")) { model.calculateFolderSize(item) }
+                                    .disabled(!model.isConnected)
+                            }
+                        }
                     }
                     if !selected.isEmpty {
                         Button(copy("action.download")) { model.download(selected) }.disabled(!model.canQueueDownloads)
@@ -626,22 +650,23 @@ struct MainView: View {
         }
         return HStack(spacing: 4) {
             Group {
-                if isIndeterminate {
-                    ProgressView().controlSize(.small)
+                if task.status == .completed {
+                    Color.clear.frame(width: 96, height: 5)
                 } else {
-                    Color.clear
+                    DownloadProgressBar(
+                        progress: task.progress,
+                        isIndeterminate: isIndeterminate
+                    )
                 }
             }
-            .frame(width: 14, height: 14)
-            .accessibilityHidden(true)
 
             Text(label)
                 .font(.body.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
-                .frame(width: 96, alignment: .trailing)
+                .frame(width: 92, alignment: .trailing)
         }
-            .frame(width: 114, alignment: .trailing)
+            .frame(width: 192, alignment: .trailing)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(label)
             .accessibilityValue(label)
@@ -689,7 +714,7 @@ struct MainView: View {
                 model.revealDownloaded(item)
             }
         case .localCopy:
-            localStatusButton("doc.badge.checkmark", itemID: item.id, help: "file.localCopy", selected: selected) {
+            localStatusButton(item.isDirectory ? "checkmark.circle" : "doc.badge.checkmark", itemID: item.id, help: "file.localCopy", selected: selected) {
                 model.revealDownloaded(item)
             }
         case .missing:
@@ -836,6 +861,7 @@ struct SettingsView: View {
                             _ = model.chooseLocalDirectory()
                         }
                             .buttonStyle(.plain)
+                            .foregroundStyle(model.isBusy ? Color.secondary : Color.bridgeAccent)
                             .disabled(model.isBusy)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading).modifier(Panel())
@@ -1171,6 +1197,40 @@ enum PreviewTextLoader {
             if let text = String(data: sample.dropLast(trim), encoding: .utf8) { return text }
         }
         return nil
+    }
+}
+
+private struct DownloadProgressBar: View {
+    let progress: Double?
+    let isIndeterminate: Bool
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !isIndeterminate)) { context in
+            GeometryReader { geometry in
+                let width = geometry.size.width
+                let phase = context.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 1.6) / 1.6
+
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Finish.divider.opacity(0.9))
+
+                    if let progress {
+                        Capsule()
+                            .fill(Finish.lilac)
+                            .frame(width: max(2, width * min(max(progress, 0), 1)))
+                    } else if isIndeterminate {
+                        Capsule()
+                            .fill(Finish.lilac)
+                            .frame(width: width * 0.28)
+                            .offset(x: width * (phase * 1.28 - 0.28))
+                    }
+                }
+                .clipShape(Capsule())
+            }
+        }
+        .frame(width: 96, height: 5)
+        .accessibilityHidden(true)
     }
 }
 

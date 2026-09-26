@@ -217,3 +217,8 @@
 "settings.support" = "Tuki";
 "settings.supportHint" = "Avaa CloudBridge-tuen oletusselaimessa.";
 "tasks.waiting" = "Odottaa latausta";
+"folderSize.calculate" = "Laske kansion koko";
+"folderSize.cancel" = "Peru koon laskenta";
+"folderSize.calculating" = "Lasketaan…";
+"folderSize.cached" = "Välimuistissa";
+"folderSize.incomplete" = "Puutteellinen";

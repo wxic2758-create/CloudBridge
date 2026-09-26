@@ -217,3 +217,8 @@
 "settings.support" = "Dukungan";
 "settings.supportHint" = "Membuka dukungan CloudBridge di browser default.";
 "tasks.waiting" = "Menunggu diunduh";
+"folderSize.calculate" = "Hitung Ukuran Folder";
+"folderSize.cancel" = "Batalkan Penghitungan";
+"folderSize.calculating" = "Menghitung…";
+"folderSize.cached" = "Tersimpan di cache";
+"folderSize.incomplete" = "Tidak lengkap";

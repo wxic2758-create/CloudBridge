@@ -217,3 +217,8 @@
 "settings.support" = "Asistență";
 "settings.supportHint" = "Deschide pagina de asistență CloudBridge în browserul implicit.";
 "tasks.waiting" = "Se așteaptă descărcarea";
+"folderSize.calculate" = "Calculează dimensiunea dosarului";
+"folderSize.cancel" = "Anulează calculul";
+"folderSize.calculating" = "Se calculează…";
+"folderSize.cached" = "În cache";
+"folderSize.incomplete" = "Incomplet";

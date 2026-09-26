@@ -217,3 +217,8 @@
 "settings.support" = "Sokongan";
 "settings.supportHint" = "Membuka sokongan CloudBridge dalam pelayar lalai.";
 "tasks.waiting" = "Menunggu muat turun";
+"folderSize.calculate" = "Kira Saiz Folder";
+"folderSize.cancel" = "Batalkan Pengiraan";
+"folderSize.calculating" = "Mengira…";
+"folderSize.cached" = "Dicache";
+"folderSize.incomplete" = "Tidak lengkap";

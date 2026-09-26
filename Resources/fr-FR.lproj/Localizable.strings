@@ -217,3 +217,8 @@
 "settings.support" = "Assistance";
 "settings.supportHint" = "Ouvre l’assistance CloudBridge dans votre navigateur par défaut.";
 "tasks.waiting" = "En attente du téléchargement";
+"folderSize.calculate" = "Calculer la taille du dossier";
+"folderSize.cancel" = "Annuler le calcul";
+"folderSize.calculating" = "Calcul en cours…";
+"folderSize.cached" = "En cache";
+"folderSize.incomplete" = "Incomplet";

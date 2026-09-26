@@ -217,3 +217,8 @@
 "settings.support" = "תמיכה";
 "settings.supportHint" = "פותח את דף התמיכה של CloudBridge בדפדפן ברירת המחדל.";
 "tasks.waiting" = "ממתין להורדה";
+"folderSize.calculate" = "חשב את גודל התיקייה";
+"folderSize.cancel" = "בטל חישוב גודל";
+"folderSize.calculating" = "מחשב…";
+"folderSize.cached" = "שמור במטמון";
+"folderSize.incomplete" = "חלקי";

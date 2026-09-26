@@ -217,3 +217,8 @@
 "settings.support" = "Υποστήριξη";
 "settings.supportHint" = "Ανοίγει την υποστήριξη του CloudBridge στο προεπιλεγμένο πρόγραμμα περιήγησης.";
 "tasks.waiting" = "Σε αναμονή για λήψη";
+"folderSize.calculate" = "Υπολογισμός μεγέθους φακέλου";
+"folderSize.cancel" = "Ακύρωση υπολογισμού";
+"folderSize.calculating" = "Υπολογισμός…";
+"folderSize.cached" = "Αποθηκευμένο";
+"folderSize.incomplete" = "Ελλιπές";

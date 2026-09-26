@@ -217,3 +217,8 @@
 "settings.support" = "Support";
 "settings.supportHint" = "Öppnar CloudBridge-support i standardwebbläsaren.";
 "tasks.waiting" = "Väntar på hämtning";
+"folderSize.calculate" = "Beräkna mappstorlek";
+"folderSize.cancel" = "Avbryt beräkning";
+"folderSize.calculating" = "Beräknar…";
+"folderSize.cached" = "Cachad";
+"folderSize.incomplete" = "Ofullständig";

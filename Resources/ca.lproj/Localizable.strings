@@ -217,3 +217,8 @@
 "settings.support" = "Assistència";
 "settings.supportHint" = "Obre l’assistència de CloudBridge al navegador predeterminat.";
 "tasks.waiting" = "Esperant la baixada";
+"folderSize.calculate" = "Calcula la mida de la carpeta";
+"folderSize.cancel" = "Cancel·la el càlcul";
+"folderSize.calculating" = "Calculant…";
+"folderSize.cached" = "En memòria cau";
+"folderSize.incomplete" = "Incomplet";

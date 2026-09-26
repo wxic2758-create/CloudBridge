@@ -216,3 +216,8 @@
 "settings.support" = "Suporte";
 "settings.supportHint" = "Abre o suporte do CloudBridge no navegador predefinido.";
 "tasks.waiting" = "A aguardar transferência";
+"folderSize.calculate" = "Calcular tamanho da pasta";
+"folderSize.cancel" = "Cancelar cálculo";
+"folderSize.calculating" = "A calcular…";
+"folderSize.cached" = "Em cache";
+"folderSize.incomplete" = "Incompleto";

@@ -217,3 +217,8 @@
 "settings.support" = "Destek";
 "settings.supportHint" = "CloudBridge destek sayfasını varsayılan tarayıcınızda açar.";
 "tasks.waiting" = "İndirme bekleniyor";
+"folderSize.calculate" = "Klasör Boyutunu Hesapla";
+"folderSize.cancel" = "Hesaplamayı İptal Et";
+"folderSize.calculating" = "Hesaplanıyor…";
+"folderSize.cached" = "Önbellekte";
+"folderSize.incomplete" = "Eksik";

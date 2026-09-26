@@ -58,7 +58,7 @@ actor SFTPClient {
         directoryCache.removeAll()
     }
 
-    func listDirectory(_ path: String, useCache: Bool = true) async throws -> [RemoteItem] {
+    func listDirectory(_ path: String, useCache: Bool = true, strict: Bool = false) async throws -> [RemoteItem] {
         if useCache, let cached = directoryCache[path] {
             return cached
         }
@@ -71,6 +71,17 @@ actor SFTPClient {
                     ["ls -lan \(sftpQuote(path))", "bye"],
                     capturesOutput: true
                 )
+                if strict {
+                    for raw in output.split(whereSeparator: \.isNewline) {
+                        let line = cleanOutputLine(String(raw))
+                        if line.isEmpty || line.hasPrefix("sftp>") || line.hasPrefix("Connected to ") || line.hasPrefix("total ") { continue }
+                        if parseSFTPLine(line, currentPath: path) != nil { continue }
+                        if let match = Self.sftpListingExpression.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
+                           let range = Range(match.range(at: 3), in: line),
+                           [".", ".."].contains(removeListedPathPrefix(from: String(line[range]), currentPath: path)) { continue }
+                        throw SFTPClientError.processFailed(AppLanguage.text("folderSize.incomplete"))
+                    }
+                }
                 items = parseSFTPDirectoryList(output, currentPath: path)
             } catch {
                 guard Self.shouldFallbackToLegacySSH(for: error) else {
@@ -87,6 +98,12 @@ actor SFTPClient {
         }
         directoryCache[path] = items
         return items
+    }
+
+    func calculateFolderSize(_ path: String) async throws -> FolderSizeResult {
+        try await FolderSizeCalculator.calculate(path: path) { path in
+            try await self.listDirectory(path, useCache: false, strict: true)
+        }
     }
 
     func download(

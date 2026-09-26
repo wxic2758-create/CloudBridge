@@ -218,3 +218,8 @@
 "credentials.removeFailed" = "Unable to remove the saved password from macOS Keychain.";
 "settings.supportHint" = "Opens CloudBridge support in your default browser.";
 "tasks.waiting" = "Waiting to download";
+"folderSize.calculate" = "Calculate Folder Size";
+"folderSize.cancel" = "Cancel Size Calculation";
+"folderSize.calculating" = "Calculating…";
+"folderSize.cached" = "Cached";
+"folderSize.incomplete" = "Incomplete";

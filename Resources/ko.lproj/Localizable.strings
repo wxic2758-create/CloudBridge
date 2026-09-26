@@ -217,3 +217,8 @@
 "settings.support" = "지원";
 "settings.supportHint" = "기본 브라우저에서 CloudBridge 지원 페이지를 엽니다.";
 "tasks.waiting" = "다운로드 대기 중";
+"folderSize.calculate" = "폴더 크기 계산";
+"folderSize.cancel" = "크기 계산 취소";
+"folderSize.calculating" = "계산 중…";
+"folderSize.cached" = "캐시됨";
+"folderSize.incomplete" = "불완전";

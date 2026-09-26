@@ -218,3 +218,8 @@
 "settings.support" = "支持";
 "settings.supportHint" = "在默认浏览器中打开 CloudBridge 支持页面。";
 "tasks.waiting" = "等待下载";
+"folderSize.calculate" = "计算文件夹大小";
+"folderSize.cancel" = "取消大小统计";
+"folderSize.calculating" = "正在统计…";
+"folderSize.cached" = "缓存结果";
+"folderSize.incomplete" = "统计不完整";

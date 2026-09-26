@@ -158,7 +158,8 @@ enum SavedServerStore {
 
     static func load(
         defaults: UserDefaults = .standard,
-        credentials: any ServerPasswordStoring = ServerPasswordStore()
+        credentials: any ServerPasswordStoring = CachedServerPasswordStore.shared,
+        migratePasswords: Bool = true
     ) -> [SavedServer] {
         guard let data = defaults.data(forKey: storageKey) else {
             return []
@@ -166,6 +167,7 @@ enum SavedServerStore {
 
         do {
             var servers = try JSONDecoder().decode([SavedServer].self, from: data)
+            guard migratePasswords else { return servers }
             let legacyServers = servers.filter { !$0.password.isEmpty }
             guard !legacyServers.isEmpty else { return servers }
 
@@ -188,11 +190,33 @@ enum SavedServerStore {
         }
     }
 
+    static func removeLegacyPassword(serverID: UUID, defaults: UserDefaults = .standard) {
+        guard let data = defaults.data(forKey: storageKey),
+              var records = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return }
+        for index in records.indices where records[index]["id"] as? String == serverID.uuidString {
+            records[index].removeValue(forKey: "password")
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: records) {
+            defaults.set(data, forKey: storageKey)
+        }
+    }
+
     static func save(_ servers: [SavedServer], defaults: UserDefaults = .standard) {
-        guard let data = try? JSONEncoder().encode(servers) else {
+        guard let data = try? JSONEncoder().encode(servers),
+              var records = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return
         }
-
-        defaults.set(data, forKey: storageKey)
+        // Preserve existing, not-yet-migrated legacy values when another server
+        // is edited. Never introduce a new plaintext password into preferences.
+        let previous = defaults.data(forKey: storageKey)
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [[String: Any]] } ?? []
+        for (index, server) in servers.enumerated() where !server.password.isEmpty {
+            if let old = previous.first(where: { $0["id"] as? String == server.id.uuidString }),
+               let password = old["password"] as? String {
+                records[index]["password"] = password
+            }
+        }
+        guard let saved = try? JSONSerialization.data(withJSONObject: records) else { return }
+        defaults.set(saved, forKey: storageKey)
     }
 }

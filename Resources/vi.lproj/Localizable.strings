@@ -217,3 +217,8 @@
 "settings.support" = "Hỗ trợ";
 "settings.supportHint" = "Mở trang hỗ trợ CloudBridge trong trình duyệt mặc định.";
 "tasks.waiting" = "Đang chờ tải xuống";
+"folderSize.calculate" = "Tính dung lượng thư mục";
+"folderSize.cancel" = "Hủy tính dung lượng";
+"folderSize.calculating" = "Đang tính…";
+"folderSize.cached" = "Đã lưu đệm";
+"folderSize.incomplete" = "Chưa đầy đủ";

@@ -217,3 +217,8 @@
 "settings.support" = "सहायता";
 "settings.supportHint" = "CloudBridge सहायता को डिफ़ॉल्ट ब्राउज़र में खोलता है।";
 "tasks.waiting" = "डाउनलोड की प्रतीक्षा";
+"folderSize.calculate" = "फ़ोल्डर के आकार की गणना करें";
+"folderSize.cancel" = "आकार की गणना रद्द करें";
+"folderSize.calculating" = "गणना जारी…";
+"folderSize.cached" = "कैश में";
+"folderSize.incomplete" = "अपूर्ण";

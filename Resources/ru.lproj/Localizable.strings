@@ -217,3 +217,8 @@
 "settings.support" = "Поддержка";
 "settings.supportHint" = "Открывает страницу поддержки CloudBridge в браузере по умолчанию.";
 "tasks.waiting" = "Ожидание загрузки";
+"folderSize.calculate" = "Рассчитать размер папки";
+"folderSize.cancel" = "Отменить расчёт";
+"folderSize.calculating" = "Вычисление…";
+"folderSize.cached" = "Из кэша";
+"folderSize.incomplete" = "Неполный";

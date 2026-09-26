@@ -61,6 +61,51 @@ final class BrowserModel {
     var downloadState = DownloadState.idle
     var downloadTasks: [DownloadTask] = []
     var lastEnqueuedDownloadTaskID: DownloadTask.ID?
+    private(set) var folderSizes: [String: FolderSizeResult] = [:]
+    private var folderSizeOperations: [String: Task<Void, Never>] = [:]
+    private var downloadStartedAt: [DownloadTask.ID: Date] = [:]
+    private var unreliableFolderTotals: Set<DownloadTask.ID> = []
+
+    private func folderSizeKey(_ path: String) -> String? {
+        selectedServerID.map { $0.uuidString + ":" + path }
+    }
+
+    func folderSize(for item: RemoteItem) -> FolderSizeResult? {
+        folderSizeKey(item.path).flatMap { folderSizes[$0] }
+    }
+
+    func isCalculatingSize(_ item: RemoteItem) -> Bool {
+        folderSizeKey(item.path).map { folderSizeOperations[$0] != nil } ?? false
+    }
+
+    func cancelFolderSize(_ item: RemoteItem) {
+        guard let key = folderSizeKey(item.path) else { return }
+        folderSizeOperations[key]?.cancel()
+    }
+
+    func calculateFolderSize(_ item: RemoteItem) {
+        guard isConnected, !isDisconnecting, item.isDirectory,
+              let key = folderSizeKey(item.path), folderSizeOperations[key] == nil else { return }
+        folderSizeOperations[key] = Task { @MainActor in
+            defer { folderSizeOperations[key] = nil }
+            do {
+                let result = try await client.calculateFolderSize(item.path)
+                try Task.checkCancellation()
+                folderSizes[key] = result
+                // Bound persistent cache size; keys include the saved server identity.
+                if folderSizes.count > 500 {
+                    folderSizes = Dictionary(uniqueKeysWithValues: folderSizes.sorted {
+                        $0.value.measuredAt > $1.value.measuredAt
+                    }.prefix(500).map { ($0.key, $0.value) })
+                }
+                if let data = try? JSONEncoder().encode(folderSizes) {
+                    UserDefaults.standard.set(data, forKey: "folderSizeCache")
+                }
+            } catch {
+                // A cancelled scan preserves the previous cached result.
+            }
+        }
+    }
 
     private let client = SFTPClient()
     private let credentials: any ServerPasswordStoring
@@ -84,8 +129,11 @@ final class BrowserModel {
     }
     private var activeDownloadTaskID: DownloadTask.ID?
     private var activeDownloadOperation: Task<Void, Never>?
-    private var activeDownloadControl: ProcessControl?
+    private var activeDownloadTaskIDs: Set<DownloadTask.ID> = []
+    private var activeDownloadControls: [DownloadTask.ID: ProcessControl] = [:]
+    private var activeDownloadWorkerTasks: [DownloadTask.ID: Task<Void, Never>] = [:]
     private var downloadQueue: [QueuedDownload] = []
+    private let maximumConcurrentDownloads = 2
     private var privateKeyAccess: PrivateKeyAccess?
     private var activeOperation: Task<Void, Never>?
     private var isDisconnecting = false
@@ -98,10 +146,15 @@ final class BrowserModel {
         initialServers: [SavedServer]? = nil,
         initialDownloadTasks: [DownloadTask]? = nil,
         loadStoredDownloadDirectory: Bool = true,
-        credentials: any ServerPasswordStoring = ServerPasswordStore()
+        credentials: any ServerPasswordStoring = CachedServerPasswordStore.shared
     ) {
         self.credentials = credentials
-        savedServers = initialServers ?? SavedServerStore.load(credentials: credentials)
+        if initialServers == nil,
+           let data = UserDefaults.standard.data(forKey: "folderSizeCache"),
+           let sizes = try? JSONDecoder().decode([String: FolderSizeResult].self, from: data) {
+            folderSizes = sizes
+        }
+        savedServers = initialServers ?? SavedServerStore.load(credentials: credentials, migratePasswords: false)
         downloadTasks = initialDownloadTasks ?? (initialServers == nil ? DownloadHistoryStore.load() : [])
         localDownloadDirectory = loadStoredDownloadDirectory
             ? SecurityScopedBookmarkStore.url(for: .downloadDirectory)
@@ -161,6 +214,10 @@ final class BrowserModel {
     }
 
     func localFileStatus(for item: RemoteItem) -> LocalFileStatus {
+        let access = localDownloadDirectory.flatMap {
+            SecurityScopedBookmarkStore.startAccessingURL(for: .downloadDirectory, matchingPath: $0.path)
+        }
+        defer { access?.stopAccessingSecurityScopedResource() }
         let task = completedDownload(for: item)
         let taskDestination = task?.destination.flatMap {
             FileManager.default.fileExists(atPath: $0.path) ? $0 : nil
@@ -170,6 +227,7 @@ final class BrowserModel {
 
         guard let task else { return localExists ? .localCopy : .none }
         guard localExists else { return .missing }
+        if item.isDirectory { return .localCopy }
         switch task.remoteMetadataMatches(item) {
         case true: return .current
         case false: return .remoteUpdated
@@ -321,7 +379,7 @@ final class BrowserModel {
             return
         }
 
-        profile = server.preparedForConnection(password: password(for: server))
+        profile = server.preparedForConnection()
         currentPath = server.defaultRemotePath
         items = []
         selectedItemID = nil
@@ -345,6 +403,11 @@ final class BrowserModel {
         guard savedServers.contains(where: { $0.id == editingServer.id }) else { return }
         do {
             try credentials.deletePassword(serverID: editingServer.id)
+            SavedServerStore.removeLegacyPassword(serverID: editingServer.id)
+            if let index = savedServers.firstIndex(where: { $0.id == editingServer.id }) {
+                savedServers[index].password = ""
+            }
+            editingServer.password = ""
             passwordCache[editingServer.id] = .missing
             isChangingPassword = true
             editingPassword = ""
@@ -356,13 +419,29 @@ final class BrowserModel {
     }
 
     func hasSavedPassword(for server: SavedServer) -> Bool {
-        if case let .value(password) = cachedPassword(for: server) {
-            return password.isEmpty == false
+        switch passwordCache[server.id] {
+        case .value(let password): return !password.isEmpty
+        case .missing: return false
+        default: return savedServers.contains { $0.id == server.id }
         }
-        return false
     }
 
     private func password(for server: SavedServer) -> String {
+        if !server.password.isEmpty {
+            // Migrate only the server explicitly being connected. Do not read back
+            // a password already available in memory after saving it.
+            if passwordCache[server.id] == nil {
+                do {
+                    try credentials.setPassword(server.password, serverID: server.id)
+                    SavedServerStore.removeLegacyPassword(serverID: server.id)
+                    if let index = savedServers.firstIndex(where: { $0.id == server.id }) {
+                        savedServers[index].password = ""
+                    }
+                } catch { }
+                passwordCache[server.id] = .value(server.password)
+            }
+            return server.password
+        }
         switch cachedPassword(for: server) {
         case .value(let password):
             return password
@@ -393,6 +472,10 @@ final class BrowserModel {
 
     func connect() {
         guard !isConnected, !isBusy else { return }
+        if let id = selectedServerID {
+            credentials.retryFailedRead(serverID: id)
+            if case .unavailable? = passwordCache[id] { passwordCache[id] = nil }
+        }
         clearPendingConnection()
         run { [self] in
             self.statusMessage = AppLanguage.text("status.connecting")
@@ -452,6 +535,8 @@ final class BrowserModel {
     private func disconnect(nextServerID: SavedServer.ID?) {
         guard !isDisconnecting else { return }
         isDisconnecting = true
+        let sizeOperations = Array(folderSizeOperations.values)
+        for operation in sizeOperations { operation.cancel() }
         let operation = activeOperation
         let download = activeDownloadOperation
         operation?.cancel()
@@ -460,7 +545,15 @@ final class BrowserModel {
             // Cancellation is a request, not completion. Keep the key authorized until
             // all operations and control-connection cleanup have actually returned.
             await operation?.value
+            for operation in sizeOperations { await operation.value }
+            let workers = Array(activeDownloadWorkerTasks.values)
+            for worker in workers {
+                worker.cancel()
+            }
             await download?.value
+            for worker in workers {
+                await worker.value
+            }
             finishPendingDownloads(status: .cancelled)
             downloadQueue.removeAll()
             try? await client.disconnect()
@@ -630,55 +723,82 @@ final class BrowserModel {
             guard let localDownloadDirectory = self.localDownloadDirectory else {
                 throw BrowserModelError.securityScopedAccessRequired(AppLanguage.text("settings.folderHelp"))
             }
-            let accessURL = SecurityScopedBookmarkStore.startAccessingURL(
-                for: .downloadDirectory,
-                matchingPath: localDownloadDirectory.path
-            )
-            if accessURL == nil {
-                throw BrowserModelError.securityScopedAccessRequired(localDownloadDirectory.path)
-            }
-            defer {
-                accessURL?.stopAccessingSecurityScopedResource()
-                self.activeDownloadControl = nil
-            }
-
-            while !self.downloadQueue.isEmpty {
+            while !self.downloadQueue.isEmpty || !self.activeDownloadWorkerTasks.isEmpty {
                 try Task.checkCancellation()
-                let job = self.downloadQueue.removeFirst()
-                self.activeDownloadTaskID = job.taskID
-                let processControl = ProcessControl()
-                self.activeDownloadControl = processControl
-                self.startTask(job.taskID)
-                self.downloadState = .downloading(job.item.name)
-                self.statusMessage = String(format: AppLanguage.text("status.downloadingItem"), job.item.name)
-
-                do {
-                    let destination = try await self.client.download(
-                        job.item,
-                        to: localDownloadDirectory,
-                        processControl: processControl
-                    ) { [weak self, taskID = job.taskID] progress in
-                        await MainActor.run {
-                            guard let self, self.activeDownloadTaskID == taskID,
-                                  self.activeDownloadOperation?.isCancelled == false else { return }
-                            self.updateTask(taskID, progress: progress)
-                        }
+                while self.activeDownloadWorkerTasks.count < self.maximumConcurrentDownloads,
+                      !self.downloadQueue.isEmpty {
+                    let job = self.downloadQueue.removeFirst()
+                    self.activeDownloadTaskIDs.insert(job.taskID)
+                    self.activeDownloadTaskID = job.taskID
+                    let worker = Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        await self.performDownload(job, localDirectory: localDownloadDirectory)
                     }
-                    self.updateTask(job.taskID, status: .completed, destination: destination)
-                    self.downloadState = .completed(job.item.name)
-                    self.statusMessage = String(format: AppLanguage.text("status.downloaded"), destination.path)
-                } catch let error as ProcessRunnerError where error == .cancelled {
-                    throw error
-                } catch is CancellationError {
-                    throw CancellationError()
-                } catch {
-                    self.updateTask(job.taskID, status: .failed(error.localizedDescription))
-                    self.downloadState = .failed(error.localizedDescription)
-                    self.errorMessage = error.localizedDescription
-                    self.statusMessage = error.localizedDescription
+                    self.activeDownloadWorkerTasks[job.taskID] = worker
                 }
-                self.activeDownloadControl = nil
+
+                // Workers are unstructured so that each row can cancel or pause
+                // independently. They remove themselves when their transfer ends.
+                if !self.activeDownloadWorkerTasks.isEmpty {
+                    try await Task.sleep(for: .milliseconds(50))
+                }
             }
+        }
+    }
+
+    private func performDownload(_ job: QueuedDownload, localDirectory: URL) async {
+        downloadStartedAt[job.taskID] = Date()
+        if job.item.isDirectory { calculateFolderSize(job.item) }
+        let processControl = ProcessControl()
+        activeDownloadControls[job.taskID] = processControl
+        startTask(job.taskID)
+        downloadState = .downloading(job.item.name)
+        statusMessage = String(format: AppLanguage.text("status.downloadingItem"), job.item.name)
+
+        defer {
+            downloadStartedAt[job.taskID] = nil
+            unreliableFolderTotals.remove(job.taskID)
+            activeDownloadControls[job.taskID] = nil
+            activeDownloadWorkerTasks[job.taskID] = nil
+            activeDownloadTaskIDs.remove(job.taskID)
+            activeDownloadTaskID = activeDownloadTaskIDs.first
+        }
+
+        do {
+            // Each worker keeps its own grant through transfer and staging cleanup,
+            // including while the queue coordinator is being cancelled.
+            guard let accessURL = SecurityScopedBookmarkStore.startAccessingURL(
+                for: .downloadDirectory, matchingPath: localDirectory.path
+            ) else {
+                throw BrowserModelError.securityScopedAccessRequired(localDirectory.path)
+            }
+            defer { accessURL.stopAccessingSecurityScopedResource() }
+            let destination = try await client.download(
+                job.item,
+                to: localDirectory,
+                processControl: processControl
+            ) { [weak self, taskID = job.taskID] progress in
+                await MainActor.run {
+                    guard let self,
+                          self.activeDownloadTaskIDs.contains(taskID),
+                          self.activeDownloadOperation?.isCancelled == false else { return }
+                    self.updateTask(taskID, progress: progress)
+                }
+            }
+            updateTask(job.taskID, status: .completed, destination: destination)
+            downloadState = .completed(job.item.name)
+            statusMessage = String(format: AppLanguage.text("status.downloaded"), destination.path)
+        } catch let error as ProcessRunnerError where error == .cancelled {
+            updateTask(job.taskID, status: .cancelled)
+            statusMessage = AppLanguage.text("status.downloadCancelled")
+        } catch is CancellationError {
+            updateTask(job.taskID, status: .cancelled)
+            statusMessage = AppLanguage.text("status.downloadCancelled")
+        } catch {
+            updateTask(job.taskID, status: .failed(error.localizedDescription))
+            downloadState = .failed(error.localizedDescription)
+            errorMessage = error.localizedDescription
+            statusMessage = error.localizedDescription
         }
     }
 
@@ -696,9 +816,10 @@ final class BrowserModel {
             downloadTasks[index].finish(status: .cancelled)
             DownloadHistoryStore.save(downloadTasks)
         case .downloading, .paused:
-            guard activeDownloadTaskID == task.id else { return }
+            guard activeDownloadTaskIDs.contains(task.id) else { return }
             statusMessage = AppLanguage.text("status.cancellingDownload")
-            activeDownloadOperation?.cancel()
+            activeDownloadControls[task.id]?.resume()
+            activeDownloadWorkerTasks[task.id]?.cancel()
         case .completed, .cancelled, .failed:
             return
         }
@@ -707,8 +828,8 @@ final class BrowserModel {
     func pauseDownload(_ task: DownloadTask) {
         guard let index = downloadTasks.firstIndex(where: { $0.id == task.id }),
               downloadTasks[index].status == .downloading,
-              activeDownloadTaskID == task.id,
-              activeDownloadControl?.pause() == true else { return }
+              activeDownloadTaskIDs.contains(task.id),
+              activeDownloadControls[task.id]?.pause() == true else { return }
         downloadTasks[index].pause()
         downloadState = .paused(task.itemName)
         statusMessage = AppLanguage.text("action.pause")
@@ -717,8 +838,8 @@ final class BrowserModel {
     func resumeDownload(_ task: DownloadTask) {
         guard let index = downloadTasks.firstIndex(where: { $0.id == task.id }),
               downloadTasks[index].status == .paused,
-              activeDownloadTaskID == task.id,
-              activeDownloadControl?.resume() == true else { return }
+              activeDownloadTaskIDs.contains(task.id),
+              activeDownloadControls[task.id]?.resume() == true else { return }
         downloadTasks[index].resume()
         downloadState = .downloading(task.itemName)
         statusMessage = AppLanguage.text("action.resume")
@@ -862,6 +983,23 @@ final class BrowserModel {
 
     private func updateTask(_ id: DownloadTask.ID, progress: DownloadProgress) {
         guard let index = downloadTasks.firstIndex(where: { $0.id == id }) else { return }
+        let task = downloadTasks[index]
+        if task.isDirectory, let key = folderSizeKey(task.remotePath),
+           let size = folderSizes[key], size.isComplete,
+           let started = downloadStartedAt[id], size.measuredAt >= started,
+           let bytes = progress.bytesTransferred {
+            if bytes > size.bytes || bytes < (task.bytesTransferred ?? 0) {
+                unreliableFolderTotals.insert(id)
+            }
+            if !unreliableFolderTotals.contains(id) {
+                downloadTasks[index].apply(DownloadProgress(
+                    bytesTransferred: bytes, totalBytes: size.bytes,
+                    speedBytesPerSecond: progress.speedBytesPerSecond,
+                    estimatedRemainingSeconds: nil
+                ))
+                return
+            }
+        }
         downloadTasks[index].apply(progress)
     }
 
@@ -924,6 +1062,13 @@ final class BrowserModel {
                 markActiveDownloadCancelled()
             } catch is CancellationError {
                 markActiveDownloadCancelled()
+                let workers = Array(activeDownloadWorkerTasks.values)
+                for worker in workers {
+                    worker.cancel()
+                }
+                for worker in workers {
+                    await worker.value
+                }
             } catch {
                 errorMessage = error.localizedDescription
                 statusMessage = error.localizedDescription
@@ -934,7 +1079,9 @@ final class BrowserModel {
             let shouldContinueQueue = isConnected && !isDisconnecting && !downloadQueue.isEmpty
             activeDownloadTaskID = nil
             activeDownloadOperation = nil
-            activeDownloadControl = nil
+            activeDownloadTaskIDs.removeAll()
+            activeDownloadControls.removeAll()
+            activeDownloadWorkerTasks.removeAll()
             isDownloading = false
             if shouldContinueQueue { runDownloadQueue() }
         }

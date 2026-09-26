@@ -2,6 +2,67 @@ import XCTest
 @testable import CloudBridge
 
 final class ProcessRunnerTests: XCTestCase {
+    func testFolderSizeIncludesNestedAndHiddenFilesWithoutDirectoryInodes() async throws {
+        let result = try await FolderSizeCalculator.calculate(path: "/root") { path in
+            if path == "/root" {
+                return [
+                    RemoteItem(id: "a", name: ".env", path: "/root/.env", kind: .file, size: 12, modifiedAt: nil),
+                    RemoteItem(id: "b", name: "nested", path: "/root/nested", kind: .directory, size: 4096, modifiedAt: nil)
+                ]
+            }
+            return [RemoteItem(id: "c", name: "file", path: "/root/nested/file", kind: .file, size: 30, modifiedAt: nil)]
+        }
+        XCTAssertEqual(result.bytes, 42)
+        XCTAssertTrue(result.isComplete)
+    }
+
+    func testFolderSizeMarksDeniedSubdirectoryAndLinksIncomplete() async throws {
+        let result = try await FolderSizeCalculator.calculate(path: "/root") { path in
+            guard path == "/root" else { throw SFTPClientError.processFailed("denied") }
+            return [
+                RemoteItem(id: "a", name: "file", path: "/root/file", kind: .file, size: 12, modifiedAt: nil),
+                RemoteItem(id: "b", name: "denied", path: "/root/denied", kind: .directory, size: nil, modifiedAt: nil),
+                RemoteItem(id: "c", name: "link", path: "/root/link", kind: .symlink, size: 3, modifiedAt: nil)
+            ]
+        }
+        XCTAssertEqual(result.bytes, 12)
+        XCTAssertFalse(result.isComplete)
+    }
+
+    func testFolderSizeCancellationDoesNotBecomePartialSuccess() async throws {
+        do {
+            _ = try await FolderSizeCalculator.calculate(path: "/root") { _ in
+                throw CancellationError()
+            }
+            XCTFail("Cancellation must propagate")
+        } catch is CancellationError {}
+    }
+
+    func testEmptyFolderHasCompleteZeroSize() async throws {
+        let result = try await FolderSizeCalculator.calculate(path: "/empty") { _ in [] }
+        XCTAssertEqual(result.bytes, 0)
+        XCTAssertTrue(result.isComplete)
+    }
+
+    func testFolderSizeDoesNotTreatUnparsedServerListingAsEmptyFolder() async throws {
+        let client = SFTPClient(profile: ServerProfile(host: "example.invalid", username: "root"),
+                                processRunner: ListingRunner(output: "unrecognized listing format"))
+        let result = try await client.calculateFolderSize("/root")
+        XCTAssertFalse(result.isComplete)
+    }
+
+    func testFolderSizeClientReadsHiddenFileAndSkipsDotEntries() async throws {
+        let output = """
+        drwxr-xr-x 2 user group 4096 Jan 14 12:00 .
+        drwxr-xr-x 2 user group 4096 Jan 14 12:00 ..
+        -rw-r--r-- 1 user group 12 Jan 14 12:00 .env
+        """
+        let client = SFTPClient(profile: ServerProfile(host: "example.invalid", username: "root"),
+                                processRunner: ListingRunner(output: output))
+        let result = try await client.calculateFolderSize("/root")
+        XCTAssertEqual(result.bytes, 12)
+        XCTAssertTrue(result.isComplete)
+    }
     actor ListingRunner: ProcessRunning {
         private(set) var requests: [ProcessRequest] = []
         private let output: String
@@ -670,8 +731,10 @@ final class ServerNavigationTests: XCTestCase {
     private final class MemoryCredentials: ServerPasswordStoring, @unchecked Sendable {
         var values: [UUID: String] = [:]
         private(set) var readCount = 0
+        var denyRead = false
         func readPassword(serverID: UUID) throws -> String? {
             readCount += 1
+            if denyRead { throw ServerPasswordStoreError.unexpectedStatus(-128) }
             return values[serverID]
         }
         func setPassword(_ password: String, serverID: UUID) throws { values[serverID] = password }
@@ -718,10 +781,15 @@ final class ServerNavigationTests: XCTestCase {
         try credentials.setPassword("local-secret", serverID: server.id)
         let model = BrowserModel(initialServers: [server], credentials: credentials)
 
-        XCTAssertEqual(model.profile.password, "local-secret")
+        XCTAssertEqual(model.profile.password, "")
         model.editSelectedServer()
         XCTAssertEqual(model.editingPassword, "")
         XCTAssertTrue(model.hasSavedPassword(for: server))
+        XCTAssertEqual(credentials.readCount, 0)
+        model.selectSavedServer(server.id)
+        XCTAssertEqual(credentials.readCount, 0)
+        XCTAssertEqual(model.preparedProfileForConnection().password, "local-secret")
+        XCTAssertEqual(credentials.readCount, 1)
     }
 
     func testPasswordReadsAreCachedDuringConnectionSetup() throws {
@@ -735,6 +803,82 @@ final class ServerNavigationTests: XCTestCase {
         _ = model.preparedProfileForConnection()
 
         XCTAssertEqual(credentials.readCount, 1)
+    }
+
+    func testCompletedFolderIsLocalCopyWithoutComparableMetadata() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let server = SavedServer(host: "example.invalid", username: "root")
+        var task = DownloadTask(itemName: "folder", remotePath: "/folder", serverName: "test",
+                                isDirectory: true, serverID: server.id)
+        task.finish(status: .completed, destination: directory)
+        let model = BrowserModel(initialServers: [server], initialDownloadTasks: [task],
+                                 loadStoredDownloadDirectory: false, credentials: MemoryCredentials())
+        let item = RemoteItem(id: "/folder", name: "folder", path: "/folder", kind: .directory, size: nil, modifiedAt: nil)
+        XCTAssertEqual(model.localFileStatus(for: item), .localCopy)
+        try FileManager.default.removeItem(at: directory)
+        XCTAssertEqual(model.localFileStatus(for: item), .missing)
+    }
+
+    func testDeferredMigrationPreservesOtherServerPasswords() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "MigrationTest.\(UUID().uuidString)"))
+        defer { defaults.removeObject(forKey: SavedServerStore.storageKey) }
+        let servers = [SavedServer(host: "one.invalid"), SavedServer(host: "two.invalid")]
+        var records = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(servers)) as? [[String: Any]])
+        for index in records.indices { records[index]["password"] = "legacy-test" }
+        defaults.set(try JSONSerialization.data(withJSONObject: records), forKey: SavedServerStore.storageKey)
+        let credentials = MemoryCredentials()
+        let loaded = SavedServerStore.load(defaults: defaults, credentials: credentials, migratePasswords: false)
+        XCTAssertTrue(credentials.values.isEmpty)
+        XCTAssertEqual(credentials.readCount, 0)
+        SavedServerStore.removeLegacyPassword(serverID: servers[0].id, defaults: defaults)
+        SavedServerStore.save(loaded, defaults: defaults)
+        let restored = SavedServerStore.load(defaults: defaults, credentials: credentials, migratePasswords: false)
+        XCTAssertEqual(restored[0].password, "")
+        XCTAssertEqual(restored[1].password, "legacy-test")
+    }
+
+    func testPasswordReadIsSharedAcrossModels() throws {
+        let server = SavedServer(host: "example.invalid", username: "root")
+        let backing = MemoryCredentials()
+        try backing.setPassword("test-password", serverID: server.id)
+        let cache = CachedServerPasswordStore(store: backing)
+        for _ in 0..<3 {
+            let model = BrowserModel(initialServers: [server], loadStoredDownloadDirectory: false, credentials: cache)
+            XCTAssertEqual(model.preparedProfileForConnection().password, "test-password")
+        }
+        XCTAssertEqual(backing.readCount, 1)
+    }
+
+    func testPasswordWriteAndDeleteUpdateSharedCache() throws {
+        let id = UUID()
+        let backing = MemoryCredentials()
+        let cache = CachedServerPasswordStore(store: backing)
+        try cache.setPassword("first", serverID: id)
+        XCTAssertEqual(try cache.readPassword(serverID: id), "first")
+        try cache.setPassword("second", serverID: id)
+        XCTAssertEqual(try cache.readPassword(serverID: id), "second")
+        try cache.deletePassword(serverID: id)
+        XCTAssertNil(try cache.readPassword(serverID: id))
+        XCTAssertEqual(backing.readCount, 0)
+    }
+
+    func testDeniedPasswordReadCanBeExplicitlyRetried() throws {
+        let id = UUID()
+        let backing = MemoryCredentials()
+        backing.values[id] = "test-password"
+        backing.denyRead = true
+        let cache = CachedServerPasswordStore(store: backing)
+        XCTAssertThrowsError(try cache.readPassword(serverID: id))
+        backing.denyRead = false
+        XCTAssertThrowsError(try cache.readPassword(serverID: id))
+        XCTAssertEqual(backing.readCount, 1)
+        cache.retryFailedRead(serverID: id)
+        XCTAssertEqual(try cache.readPassword(serverID: id), "test-password")
+        cache.retryFailedRead(serverID: id)
+        XCTAssertEqual(try cache.readPassword(serverID: id), "test-password")
+        XCTAssertEqual(backing.readCount, 2)
     }
 
     func testReconnectRestoresPasswordFromKeychain() throws {
@@ -910,6 +1054,7 @@ final class ServerNavigationTests: XCTestCase {
         let model = BrowserModel(initialServers: [server])
         model.isConnected = true
         model.isDownloading = true
+        model.localDownloadDirectory = FileManager.default.temporaryDirectory
         let first = RemoteItem(id: "/first.txt", name: "first.txt", path: "/first.txt", kind: .file, size: 10, modifiedAt: nil)
         let second = RemoteItem(id: "/second.txt", name: "second.txt", path: "/second.txt", kind: .file, size: 20, modifiedAt: nil)
 
@@ -920,7 +1065,7 @@ final class ServerNavigationTests: XCTestCase {
     }
 
     func testDownloadDirectoryIsUnsetWithoutAStoredBookmark() {
-        let model = BrowserModel(initialServers: [])
+        let model = BrowserModel(initialServers: [], loadStoredDownloadDirectory: false)
 
         XCTAssertNil(model.localDownloadDirectory)
     }
@@ -1003,6 +1148,7 @@ final class ServerNavigationTests: XCTestCase {
         let model = BrowserModel(initialServers: [server], initialDownloadTasks: [completed])
         model.isConnected = true
         model.isDownloading = true
+        model.localDownloadDirectory = FileManager.default.temporaryDirectory
         let item = RemoteItem(id: "/archive.zip", name: "archive.zip", path: "/archive.zip", kind: .file, size: 8, modifiedAt: nil)
 
         model.download(item)

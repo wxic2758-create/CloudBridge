@@ -217,3 +217,8 @@
 "settings.support" = "Pomoc";
 "settings.supportHint" = "Otwiera stronę pomocy CloudBridge w domyślnej przeglądarce.";
 "tasks.waiting" = "Oczekiwanie na pobranie";
+"folderSize.calculate" = "Oblicz rozmiar folderu";
+"folderSize.cancel" = "Anuluj obliczanie";
+"folderSize.calculating" = "Obliczanie…";
+"folderSize.cached" = "W pamięci podręcznej";
+"folderSize.incomplete" = "Niepełne";

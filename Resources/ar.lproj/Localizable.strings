@@ -217,3 +217,8 @@
 "settings.support" = "الدعم";
 "settings.supportHint" = "يفتح صفحة دعم CloudBridge في المتصفح الافتراضي.";
 "tasks.waiting" = "في انتظار التنزيل";
+"folderSize.calculate" = "حساب حجم المجلد";
+"folderSize.cancel" = "إلغاء حساب الحجم";
+"folderSize.calculating" = "جارٍ الحساب…";
+"folderSize.cached" = "محفوظ مؤقتًا";
+"folderSize.incomplete" = "غير مكتمل";
