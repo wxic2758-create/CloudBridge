@@ -164,11 +164,8 @@ final class BrowserModel {
 
         guard let task else { return localExists ? .localCopy : .none }
         guard localExists else { return .missing }
-        switch task.remoteMetadataMatches(item) {
-        case true: return .current
-        case false: return .remoteUpdated
-        case nil: return .localCopy
-        }
+        guard let matches = task.remoteMetadataMatches(item) else { return .localCopy }
+        return matches ? .current : .remoteUpdated
     }
 
     var isBusy: Bool {
