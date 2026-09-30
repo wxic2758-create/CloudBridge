@@ -2,7 +2,7 @@
 
 CloudBridge 是面向 Mac 的 SFTP 客户端，可浏览远程文件、用 Quick Look 预览并下载到本机。
 
-[在 Mac App Store 免费获取 CloudBridge](https://apps.apple.com/app/apple-store/id6787467520?pt=128852046&ct=2026Oct_GitHub&mt=8)
+[在 Mac App Store 免费获取 CloudBridge](https://apps.apple.com/cn/app/cloudbridge-sftp-transfer/id6787467520?pt=128852046&ct=2026Oct_GitHub&mt=12)
 
 ## 当前状态
 
