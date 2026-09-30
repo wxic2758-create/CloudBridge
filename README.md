@@ -1,10 +1,12 @@
 # CloudBridge
 
-macOS SwiftUI SFTP 下载工具。当前正在重做界面。
+CloudBridge 是面向 Mac 的 SFTP 客户端，可浏览远程文件、用 Quick Look 预览并下载到本机。
+
+[在 Mac App Store 免费获取 CloudBridge](https://apps.apple.com/app/apple-store/id6787467520?pt=128852046&ct=2026Oct_GitHub&mt=8)
 
 ## 当前状态
 
-当前界面已接回服务器选择、添加/编辑、OpenSSH 首次信任、远程文件浏览与 Quick Look、顺序下载队列、重复下载自动重命名、下载历史、取消/重试、Finder 定位、下载目录及全部语言选择。已移除示例下载数据和硬编码英文，密码随应用的本机服务器配置保存，不访问 macOS 钥匙串。界面支持系统明暗外观；真实服务器端到端连接与下载仍需在目标服务器上验收。
+1.0 已在 Mac App Store 上架。当前代码支持密码连接、远程目录浏览与 Quick Look、文件和文件夹下载、下载历史、Finder 定位及系统明暗外观。保存的服务器密码使用 macOS 钥匙串；本仓库仍在迭代，开发分支功能以实际构建和测试为准。
 
 ## 打开与构建
 
