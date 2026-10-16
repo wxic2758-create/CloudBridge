@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "build": "24",
+  "build": "27",
   "releaseMode": "MANUAL_RELEASE",
   "localizations": [
     "en-US",
